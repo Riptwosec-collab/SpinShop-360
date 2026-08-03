@@ -65,15 +65,13 @@ export function Product360Viewer({ frames, alt }: Product360ViewerProps) {
     }
 
     loadFrame(frames[0], true);
-    const preloadRest = () => frames.slice(1).forEach((src) => loadFrame(src));
-    const idleId = "requestIdleCallback" in window
-      ? window.requestIdleCallback(preloadRest, { timeout: 1200 })
-      : window.setTimeout(preloadRest, 250);
+    const preloadTimer = window.setTimeout(() => {
+      frames.slice(1).forEach((src) => loadFrame(src));
+    }, 250);
 
     return () => {
       cancelled = true;
-      if ("cancelIdleCallback" in window && typeof idleId === "number") window.cancelIdleCallback(idleId);
-      else window.clearTimeout(idleId as number);
+      window.clearTimeout(preloadTimer);
     };
   }, [frames, frameCount]);
 
