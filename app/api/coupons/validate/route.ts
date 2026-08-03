@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (coupon.usage_limit_per_user != null) {
-    const authClient = createSupabaseServerClient();
+    const authClient = await createSupabaseServerClient();
     const userId = authClient ? (await authClient.auth.getUser()).data.user?.id : null;
     if (userId) {
       const { count } = await serviceClient
