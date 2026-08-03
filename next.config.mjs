@@ -20,19 +20,10 @@ const nextConfig = {
       { protocol: "https", hostname: "modelviewer.dev" },
     ],
   },
-  eslint: {
-    dirs: ["app", "components", "lib", "types"],
-  },
   async headers() {
     return [
-      {
-        source: "/:path*",
-        headers: securityHeaders,
-      },
-      {
-        source: "/api/:path*",
-        headers: [{ key: "Cache-Control", value: "no-store" }],
-      },
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
     ];
   },
 };
