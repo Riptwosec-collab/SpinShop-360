@@ -43,21 +43,31 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Upgrade framework and React dependencies
+      - name: Resolve a clean Next.js 16 dependency graph
         if: steps.marker.outputs.run == 'true'
         run: |
-          npm install --save-exact \
-            next@16.2.12 \
-            react@latest \
-            react-dom@latest \
-            @react-three/fiber@latest \
-            @react-three/drei@latest
-          npm install --save-dev --save-exact \
-            eslint@latest \
-            eslint-config-next@16.2.12 \
-            @types/react@latest \
-            @types/react-dom@latest
-          npm pkg set scripts.lint="eslint ."
+          REACT_VERSION="$(npm view react version)"
+          REACT_DOM_VERSION="$(npm view react-dom version)"
+          FIBER_VERSION="$(npm view @react-three/fiber version)"
+          DREI_VERSION="$(npm view @react-three/drei version)"
+          ESLINT_VERSION="$(npm view eslint version)"
+          REACT_TYPES_VERSION="$(npm view @types/react version)"
+          REACT_DOM_TYPES_VERSION="$(npm view @types/react-dom version)"
+
+          npm pkg set \
+            "dependencies.next=16.2.12" \
+            "dependencies.react=${REACT_VERSION}" \
+            "dependencies.react-dom=${REACT_DOM_VERSION}" \
+            "dependencies.@react-three/fiber=${FIBER_VERSION}" \
+            "dependencies.@react-three/drei=${DREI_VERSION}" \
+            "devDependencies.eslint=${ESLINT_VERSION}" \
+            "devDependencies.eslint-config-next=16.2.12" \
+            "devDependencies.@types/react=${REACT_TYPES_VERSION}" \
+            "devDependencies.@types/react-dom=${REACT_DOM_TYPES_VERSION}" \
+            "scripts.lint=eslint ."
+
+          rm -f package-lock.json
+          npm install
 
       - name: Create Next.js 16 ESLint flat config
         if: steps.marker.outputs.run == 'true'
