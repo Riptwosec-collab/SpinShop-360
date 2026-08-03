@@ -1,7 +1,7 @@
 export interface CreatePaymentInput {
   orderId: string;
   orderNumber: string;
-  amount: number; // in THB (major unit, e.g. 199.00)
+  amount: number; // in THB major units, e.g. 199.00
   currency: string;
   method: "promptpay" | "credit_card" | "debit_card" | "bank_transfer" | "cod";
   customerEmail: string;
@@ -13,7 +13,7 @@ export interface CreatePaymentResult {
   message: string;
   /** URL to redirect the customer to (hosted checkout / 3DS challenge), if any */
   redirectUrl?: string;
-  /** Raw QR payload for PromptPay, if applicable */
+  /** Raw QR payload or hosted QR image URL, if applicable */
   qrCodeData?: string;
   providerTransactionId?: string;
 }
@@ -28,13 +28,10 @@ export interface WebhookEvent {
   providerTransactionId: string;
   orderId?: string;
   amount?: number;
+  currency?: string;
 }
 
-/**
- * Common interface every payment gateway adapter implements. Route Handlers
- * call these methods without needing to know which provider is configured —
- * swap providers by changing `getActivePaymentAdapter()` in `index.ts`.
- */
+/** Common interface implemented by every payment gateway adapter. */
 export interface PaymentAdapter {
   readonly providerName: string;
   createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult>;
