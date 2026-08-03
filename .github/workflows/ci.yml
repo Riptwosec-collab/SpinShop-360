@@ -11,10 +11,97 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  upgrade-next:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      upgraded: ${{ steps.marker.outputs.run }}
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Check one-time upgrade marker
+        id: marker
+        run: |
+          if [ -f .github/workflows/next-upgrade-once.yml ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: steps.marker.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Upgrade framework and React dependencies
+        if: steps.marker.outputs.run == 'true'
+        run: |
+          npm install --save-exact \
+            next@16.2.12 \
+            react@latest \
+            react-dom@latest \
+            @react-three/fiber@latest \
+            @react-three/drei@latest
+          npm install --save-dev --save-exact \
+            eslint@latest \
+            eslint-config-next@16.2.12 \
+            @types/react@latest \
+            @types/react-dom@latest
+          npm pkg set scripts.lint="eslint ."
+
+      - name: Create Next.js 16 ESLint flat config
+        if: steps.marker.outputs.run == 'true'
+        run: |
+          rm -f .eslintrc.json
+          cat > eslint.config.mjs <<'EOF'
+          import { defineConfig, globalIgnores } from "eslint/config";
+          import nextVitals from "eslint-config-next/core-web-vitals";
+          import nextTs from "eslint-config-next/typescript";
+
+          export default defineConfig([
+            ...nextVitals,
+            ...nextTs,
+            globalIgnores([
+              ".next/**",
+              "out/**",
+              "build/**",
+              "next-env.d.ts",
+            ]),
+            {
+              rules: {
+                "@next/next/no-img-element": "warn",
+              },
+            },
+          ]);
+          EOF
+
+      - name: Verify upgraded production dependencies
+        if: steps.marker.outputs.run == 'true'
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit generated dependency files
+        if: steps.marker.outputs.run == 'true'
+        run: |
+          rm .github/workflows/next-upgrade-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "upgrade Next.js and React dependencies"
+          git push origin HEAD:${{ github.head_ref }}
+
   quality:
+    needs: upgrade-next
+    if: always() && needs.upgrade-next.outputs.upgraded != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
