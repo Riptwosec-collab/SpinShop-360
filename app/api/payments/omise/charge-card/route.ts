@@ -6,10 +6,14 @@ import { verifyCheckoutToken } from "@/lib/checkout-token";
 const bodySchema = z.object({
   token: z.string().startsWith("tokn_", "Token ไม่ถูกต้อง"),
   orderId: z.string().uuid(),
-  paymentToken: z.string().min(20),
+  paymentToken: z.string().min(20).optional(),
 });
 
 const OMISE_API_BASE = "https://api.omise.co";
+
+function checkoutCookieName(orderId: string) {
+  return `spinshop_checkout_${orderId}`;
+}
 
 /**
  * Exchanges an Omise.js card token for a charge using the amount loaded from
@@ -27,7 +31,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "ข้อมูลคำขอไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const checkoutToken = verifyCheckoutToken(parsed.data.paymentToken, parsed.data.orderId);
+  const suppliedToken =
+    parsed.data.paymentToken ?? request.cookies.get(checkoutCookieName(parsed.data.orderId))?.value;
+  const checkoutToken = suppliedToken ? verifyCheckoutToken(suppliedToken, parsed.data.orderId) : null;
   if (!checkoutToken) {
     return NextResponse.json({ ok: false, message: "สิทธิ์ชำระเงินหมดอายุหรือไม่ถูกต้อง" }, { status: 401 });
   }
@@ -112,13 +118,23 @@ export async function POST(request: NextRequest) {
       payment_data: { authorize_uri: charge.authorize_uri ?? null },
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       message: charge.status === "successful" ? "ชำระเงินสำเร็จ กำลังยืนยันรายการ" : "กำลังตรวจสอบการชำระเงิน",
       providerTransactionId: charge.id,
       status: charge.status,
       authorizeUri: charge.authorize_uri ?? null,
     });
+    response.cookies.set({
+      name: checkoutCookieName(order.id),
+      value: "",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/api/payments",
+      maxAge: 0,
+    });
+    return response;
   } catch (err) {
     return NextResponse.json(
       { ok: false, message: err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ Omise" },
