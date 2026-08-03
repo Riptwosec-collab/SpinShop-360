@@ -6,9 +6,13 @@ import { verifyCheckoutToken } from "@/lib/checkout-token";
 
 const bodySchema = z.object({
   orderId: z.string().uuid(),
-  paymentToken: z.string().min(20),
+  paymentToken: z.string().min(20).optional(),
   method: z.enum(["promptpay", "credit_card", "debit_card", "bank_transfer"]),
 });
+
+function checkoutCookieName(orderId: string) {
+  return `spinshop_checkout_${orderId}`;
+}
 
 /**
  * Creates a gateway payment from the canonical order stored in the database.
@@ -21,7 +25,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "ข้อมูลคำขอไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const token = verifyCheckoutToken(parsed.data.paymentToken, parsed.data.orderId);
+  const suppliedToken =
+    parsed.data.paymentToken ?? request.cookies.get(checkoutCookieName(parsed.data.orderId))?.value;
+  const token = suppliedToken ? verifyCheckoutToken(suppliedToken, parsed.data.orderId) : null;
   if (!token) {
     return NextResponse.json({ ok: false, message: "สิทธิ์ชำระเงินหมดอายุหรือไม่ถูกต้อง" }, { status: 401 });
   }
@@ -100,8 +106,20 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json(result, {
+  const response = NextResponse.json(result, {
     status: result.ok ? 200 : 402,
     headers: { "Cache-Control": "no-store" },
   });
+  if (result.ok) {
+    response.cookies.set({
+      name: checkoutCookieName(order.id),
+      value: "",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/api/payments",
+      maxAge: 0,
+    });
+  }
+  return response;
 }
