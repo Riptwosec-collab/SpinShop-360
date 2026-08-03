@@ -66,7 +66,8 @@ jobs:
             "devDependencies.eslint-config-next=16.2.12" \
             "devDependencies.@types/react=${REACT_TYPES_VERSION}" \
             "devDependencies.@types/react-dom=${REACT_DOM_TYPES_VERSION}" \
-            "overrides.postcss=${POSTCSS_VERSION}" \
+            "devDependencies.postcss=${POSTCSS_VERSION}" \
+            'overrides.postcss=$postcss' \
             "overrides.sharp=${SHARP_VERSION}" \
             "scripts.lint=eslint ."
 
