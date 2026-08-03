@@ -53,6 +53,10 @@ function orderErrorMessage(message: string) {
   return "ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่";
 }
 
+function checkoutCookieName(orderId: string) {
+  return `spinshop_checkout_${orderId}`;
+}
+
 /**
  * Creates an order from canonical database prices and stock. Client-provided
  * totals, discounts, shipping fees and product labels are never trusted.
@@ -88,7 +92,6 @@ export async function POST(request: NextRequest) {
   let data: unknown = null;
   let rpcError: { message: string } | null = null;
 
-  // Retry rare order-number collisions without asking the customer to resubmit.
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const orderNumber = generateOrderNumber();
     const result = await serviceClient.rpc("create_order_with_stock_check", {
@@ -104,7 +107,6 @@ export async function POST(request: NextRequest) {
       p_shipping_address: parsed.data.shippingAddress,
       p_payment_method: parsed.data.paymentMethod,
       p_shipping_method: parsed.data.shippingMethod,
-      // Kept for backwards-compatible RPC signature. The database ignores both.
       p_shipping_fee: 0,
       p_discount_amount: 0,
       p_coupon_code: parsed.data.couponCode ?? null,
@@ -172,7 +174,7 @@ export async function POST(request: NextRequest) {
     })
     .catch(() => undefined);
 
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       ok: true,
       message: "สร้างคำสั่งซื้อสำเร็จ",
@@ -180,9 +182,22 @@ export async function POST(request: NextRequest) {
         id: order.order_id,
         orderNumber: order.order_number,
         grandTotal: order.grand_total,
-        paymentToken,
       },
     },
     { headers: { "Cache-Control": "no-store" } }
   );
+
+  if (paymentToken) {
+    response.cookies.set({
+      name: checkoutCookieName(order.order_id),
+      value: paymentToken,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/api/payments",
+      maxAge: 30 * 60,
+    });
+  }
+
+  return response;
 }
