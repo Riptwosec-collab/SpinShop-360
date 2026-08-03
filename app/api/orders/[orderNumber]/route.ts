@@ -6,17 +6,18 @@ function orderViewCookieName(orderNumber: string) {
   return `spinshop_order_${orderNumber}`;
 }
 
-/**
- * Returns an order to its signed-in owner, staff, or the guest browser that
- * holds the signed confirmation cookie issued when the order was created.
- */
-export async function GET(request: NextRequest, { params }: { params: { orderNumber: string } }) {
-  const orderNumber = params.orderNumber.trim();
+interface RouteContext {
+  params: Promise<{ orderNumber: string }>;
+}
+
+export async function GET(request: NextRequest, { params }: RouteContext) {
+  const { orderNumber: rawOrderNumber } = await params;
+  const orderNumber = rawOrderNumber.trim();
   if (!/^SS\d{6}-\d{4,}$/.test(orderNumber)) {
     return NextResponse.json({ ok: false, message: "เลขที่คำสั่งซื้อไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const userClient = createSupabaseServerClient();
+  const userClient = await createSupabaseServerClient();
   if (userClient) {
     const { data: ownedOrder } = await userClient
       .from("orders")
