@@ -53,6 +53,8 @@ jobs:
           ESLINT_VERSION="$(npm view eslint version)"
           REACT_TYPES_VERSION="$(npm view @types/react version)"
           REACT_DOM_TYPES_VERSION="$(npm view @types/react-dom version)"
+          POSTCSS_VERSION="$(npm view postcss version)"
+          SHARP_VERSION="$(npm view sharp version)"
 
           npm pkg set \
             "dependencies.next=16.2.12" \
@@ -64,6 +66,8 @@ jobs:
             "devDependencies.eslint-config-next=16.2.12" \
             "devDependencies.@types/react=${REACT_TYPES_VERSION}" \
             "devDependencies.@types/react-dom=${REACT_DOM_TYPES_VERSION}" \
+            "overrides.postcss=${POSTCSS_VERSION}" \
+            "overrides.sharp=${SHARP_VERSION}" \
             "scripts.lint=eslint ."
 
           rm -f package-lock.json
