@@ -4,14 +4,12 @@ import { hotspotsPayloadSchema } from "@/lib/validators/admin-product";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/audit-log";
 
-/**
- * PUT /api/admin/products/[id]/hotspots
- * Replaces the full set of hotspots for a product in one call — simplest
- * correct semantics for a "save" button in the editor (delete rows the
- * editor removed, insert new ones, update the rest) rather than diffing
- * individual add/remove/update calls from the client.
- */
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+export async function PUT(request: NextRequest, { params }: RouteContext) {
+  const { id } = await params;
   const session = await requireAdminSession();
   if (!session) {
     return NextResponse.json(
@@ -31,24 +29,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ ok: false, message: "ไม่สามารถเชื่อมต่อฐานข้อมูลได้" }, { status: 500 });
   }
 
-  // Replace-all: delete existing rows for this product, then bulk-insert
-  // the editor's current set. Simpler and less error-prone than diffing,
-  // and hotspot counts are small (single digits) so this is cheap.
-  const { error: deleteError } = await supabase.from("product_hotspots").delete().eq("product_id", params.id);
+  const { error: deleteError } = await supabase.from("product_hotspots").delete().eq("product_id", id);
   if (deleteError) {
     return NextResponse.json({ ok: false, message: "ไม่สามารถบันทึก Hotspot ได้" }, { status: 400 });
   }
 
   if (parsed.data.hotspots.length > 0) {
     const { error: insertError } = await supabase.from("product_hotspots").insert(
-      parsed.data.hotspots.map((h, index) => ({
-        product_id: params.id,
-        title: h.title,
-        description: h.description,
-        position: h.position,
-        normal: h.normal,
-        is_active: h.isActive,
-        sort_order: h.sortOrder ?? index,
+      parsed.data.hotspots.map((hotspot, index) => ({
+        product_id: id,
+        title: hotspot.title,
+        description: hotspot.description,
+        position: hotspot.position,
+        normal: hotspot.normal,
+        is_active: hotspot.isActive,
+        sort_order: hotspot.sortOrder ?? index,
       }))
     );
     if (insertError) {
@@ -60,7 +55,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     userId: session.userId,
     action: "product.hotspots.save",
     entityType: "product",
-    entityId: params.id,
+    entityId: id,
     metadata: { count: parsed.data.hotspots.length },
   });
 
