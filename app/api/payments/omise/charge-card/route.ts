@@ -15,10 +15,7 @@ function checkoutCookieName(orderId: string) {
   return `spinshop_checkout_${orderId}`;
 }
 
-/**
- * Exchanges an Omise.js card token for a charge using the amount loaded from
- * the trusted order record. Browser-supplied totals are never accepted.
- */
+/** Exchanges an Omise.js token for a charge using the canonical order amount. */
 export async function POST(request: NextRequest) {
   const secretKey = process.env.OMISE_SECRET_KEY;
   if (!secretKey) {
@@ -31,8 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "ข้อมูลคำขอไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const suppliedToken =
-    parsed.data.paymentToken ?? request.cookies.get(checkoutCookieName(parsed.data.orderId))?.value;
+  const suppliedToken = parsed.data.paymentToken ?? request.cookies.get(checkoutCookieName(parsed.data.orderId))?.value;
   const checkoutToken = suppliedToken ? verifyCheckoutToken(suppliedToken, parsed.data.orderId) : null;
   if (!checkoutToken) {
     return NextResponse.json({ ok: false, message: "สิทธิ์ชำระเงินหมดอายุหรือไม่ถูกต้อง" }, { status: 401 });
@@ -55,7 +51,7 @@ export async function POST(request: NextRequest) {
   if (order.payment_status === "paid") {
     return NextResponse.json({ ok: false, message: "คำสั่งซื้อนี้ชำระเงินแล้ว" }, { status: 409 });
   }
-  if (order.status === "cancelled") {
+  if (String(order.status) === "cancelled") {
     return NextResponse.json({ ok: false, message: "คำสั่งซื้อนี้หมดอายุหรือถูกยกเลิกแล้ว" }, { status: 409 });
   }
   if (order.payment_method !== "credit_card" && order.payment_method !== "debit_card") {
@@ -135,9 +131,9 @@ export async function POST(request: NextRequest) {
       maxAge: 0,
     });
     return response;
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { ok: false, message: err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ Omise" },
+      { ok: false, message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ Omise" },
       { status: 500 }
     );
   }
