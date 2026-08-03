@@ -8,11 +8,12 @@ import { RelatedProducts } from "@/components/product/related-products";
 import { APP_URL } from "@/lib/constants";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const product = await getProductBySlug(params.slug);
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
   if (!product) return {};
 
   const image = product.images[0]?.url ?? product.fallbackImageUrl;
@@ -35,7 +36,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
-  const product = await getProductBySlug(params.slug);
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
   const [reviews, related] = await Promise.all([
@@ -47,7 +49,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    image: product.images.map((i) => i.url),
+    image: product.images.map((image) => image.url),
     description: product.shortDescription,
     sku: product.sku,
     brand: { "@type": "Brand", name: product.brand },
@@ -81,9 +83,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-14">
