@@ -1,32 +1,39 @@
 /**
- * Hand-written types mirroring `supabase/migrations/0001_init.sql`.
- * If you change the schema, either update this file to match or run
- * `supabase gen types typescript --local > types/database.ts` to regenerate
- * it automatically from the live schema (recommended once the project is
- * connected to a real Supabase instance).
+ * Hand-written Supabase types. Regenerate from the linked project with
+ * `supabase gen types typescript` after applying migrations.
  */
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
+
+type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
+  Row: Row;
+  Insert: Insert;
+  Update: Update;
+  Relationships: [];
+};
+
+type Timestamps = { created_at: string; updated_at: string };
 
 export interface Database {
   public: {
     Tables: {
-      profiles: {
-        Row: {
+      profiles: Table<
+        Timestamps & {
           id: string;
           email: string;
           full_name: string | null;
           phone: string | null;
           avatar_url: string | null;
           role: "customer" | "staff" | "admin";
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & { id: string; email: string };
-        Update: Partial<Database["public"]["Tables"]["profiles"]["Row"]>;
-        Relationships: [];
-      };
-      categories: {
-        Row: {
+        },
+        Partial<Timestamps & {
+          full_name: string | null;
+          phone: string | null;
+          avatar_url: string | null;
+          role: "customer" | "staff" | "admin";
+        }> & { id: string; email: string }
+      >;
+      categories: Table<
+        Timestamps & {
           id: string;
           name: string;
           slug: string;
@@ -35,30 +42,22 @@ export interface Database {
           parent_id: string | null;
           is_active: boolean;
           sort_order: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["categories"]["Row"]> & { name: string; slug: string };
-        Update: Partial<Database["public"]["Tables"]["categories"]["Row"]>;
-        Relationships: [];
-      };
-      brands: {
-        Row: {
+        },
+        Partial<Database["public"]["Tables"]["categories"]["Row"]> & { name: string; slug: string }
+      >;
+      brands: Table<
+        Timestamps & {
           id: string;
           name: string;
           slug: string;
           logo_url: string | null;
           description: string | null;
           is_active: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["brands"]["Row"]> & { name: string; slug: string };
-        Update: Partial<Database["public"]["Tables"]["brands"]["Row"]>;
-        Relationships: [];
-      };
-      products: {
-        Row: {
+        },
+        Partial<Database["public"]["Tables"]["brands"]["Row"]> & { name: string; slug: string }
+      >;
+      products: Table<
+        Timestamps & {
           id: string;
           name: string;
           slug: string;
@@ -85,20 +84,12 @@ export interface Database {
           seo_title: string | null;
           seo_description: string | null;
           published_at: string | null;
-          created_at: string;
-          updated_at: string;
           deleted_at: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["products"]["Row"]> & {
-          name: string;
-          slug: string;
-          sku: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["products"]["Row"]>;
-        Relationships: [];
-      };
-      product_images: {
-        Row: {
+        },
+        Partial<Database["public"]["Tables"]["products"]["Row"]> & { name: string; slug: string; sku: string }
+      >;
+      product_images: Table<
+        {
           id: string;
           product_id: string;
           url: string;
@@ -106,33 +97,26 @@ export interface Database {
           sort_order: number;
           is_primary: boolean;
           created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["product_images"]["Row"]> & {
-          product_id: string;
-          url: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["product_images"]["Row"]>;
-        Relationships: [];
-      };
-      product_360_frames: {
-        Row: {
+        },
+        Partial<Database["public"]["Tables"]["product_images"]["Row"]> & { product_id: string; url: string }
+      >;
+      product_360_frames: Table<
+        {
           id: string;
           product_id: string;
           variant_id: string | null;
           frame_number: number;
           image_url: string;
           created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["product_360_frames"]["Row"]> & {
+        },
+        Partial<Database["public"]["Tables"]["product_360_frames"]["Row"]> & {
           product_id: string;
           frame_number: number;
           image_url: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["product_360_frames"]["Row"]>;
-        Relationships: [];
-      };
-      product_variants: {
-        Row: {
+        }
+      >;
+      product_variants: Table<
+        Timestamps & {
           id: string;
           product_id: string;
           sku: string;
@@ -142,19 +126,15 @@ export interface Database {
           image_url: string | null;
           model_url: string | null;
           is_active: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["product_variants"]["Row"]> & {
+        },
+        Partial<Database["public"]["Tables"]["product_variants"]["Row"]> & {
           product_id: string;
           sku: string;
           price: number;
-        };
-        Update: Partial<Database["public"]["Tables"]["product_variants"]["Row"]>;
-        Relationships: [];
-      };
-      product_hotspots: {
-        Row: {
+        }
+      >;
+      product_hotspots: Table<
+        Timestamps & {
           id: string;
           product_id: string;
           variant_id: string | null;
@@ -166,19 +146,15 @@ export interface Database {
           icon: string | null;
           sort_order: number;
           is_active: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["product_hotspots"]["Row"]> & {
+        },
+        Partial<Database["public"]["Tables"]["product_hotspots"]["Row"]> & {
           product_id: string;
           title: string;
           position: Json;
-        };
-        Update: Partial<Database["public"]["Tables"]["product_hotspots"]["Row"]>;
-        Relationships: [];
-      };
-      orders: {
-        Row: {
+        }
+      >;
+      orders: Table<
+        Timestamps & {
           id: string;
           order_number: string;
           user_id: string | null;
@@ -199,13 +175,11 @@ export interface Database {
           shipping_method: string;
           customer_note: string | null;
           admin_note: string | null;
-          created_at: string;
-          updated_at: string;
           paid_at: string | null;
           shipped_at: string | null;
           delivered_at: string | null;
-        };
-        Insert: Partial<Database["public"]["Tables"]["orders"]["Row"]> & {
+        },
+        Partial<Database["public"]["Tables"]["orders"]["Row"]> & {
           order_number: string;
           email: string;
           phone: string;
@@ -214,12 +188,10 @@ export interface Database {
           shipping_address: Json;
           payment_method: string;
           shipping_method: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["orders"]["Row"]>;
-        Relationships: [];
-      };
-      order_items: {
-        Row: {
+        }
+      >;
+      order_items: Table<
+        {
           id: string;
           order_id: string;
           product_id: string | null;
@@ -232,20 +204,37 @@ export interface Database {
           quantity: number;
           line_total: number;
           created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["order_items"]["Row"]> & {
+        },
+        Partial<Database["public"]["Tables"]["order_items"]["Row"]> & {
           order_id: string;
           product_name: string;
           sku: string;
           unit_price: number;
           quantity: number;
           line_total: number;
-        };
-        Update: Partial<Database["public"]["Tables"]["order_items"]["Row"]>;
-        Relationships: [];
-      };
-      coupons: {
-        Row: {
+        }
+      >;
+      payments: Table<
+        Timestamps & {
+          id: string;
+          order_id: string;
+          provider: string;
+          provider_transaction_id: string | null;
+          method: string;
+          amount: number;
+          currency: string;
+          status: string;
+          payment_data: Json;
+        },
+        Partial<Database["public"]["Tables"]["payments"]["Row"]> & {
+          order_id: string;
+          provider: string;
+          method: string;
+          amount: number;
+        }
+      >;
+      coupons: Table<
+        Timestamps & {
           id: string;
           code: string;
           name: string | null;
@@ -258,18 +247,21 @@ export interface Database {
           starts_at: string | null;
           expires_at: string | null;
           is_active: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["coupons"]["Row"]> & {
+        },
+        Partial<Database["public"]["Tables"]["coupons"]["Row"]> & {
           code: string;
           discount_type: "percentage" | "fixed" | "free_shipping";
-        };
-        Update: Partial<Database["public"]["Tables"]["coupons"]["Row"]>;
-        Relationships: [];
-      };
-      reviews: {
-        Row: {
+        }
+      >;
+      coupon_usages: Table<{
+        id: string;
+        coupon_id: string;
+        user_id: string | null;
+        order_id: string | null;
+        used_at: string;
+      }>;
+      reviews: Table<
+        Timestamps & {
           id: string;
           product_id: string;
           user_id: string;
@@ -280,20 +272,16 @@ export interface Database {
           is_verified_purchase: boolean;
           status: "pending" | "approved" | "rejected" | "hidden";
           helpful_count: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["reviews"]["Row"]> & {
+        },
+        Partial<Database["public"]["Tables"]["reviews"]["Row"]> & {
           product_id: string;
           user_id: string;
           rating: number;
           content: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["reviews"]["Row"]>;
-        Relationships: [];
-      };
-      activity_logs: {
-        Row: {
+        }
+      >;
+      activity_logs: Table<
+        {
           id: string;
           user_id: string | null;
           action: string;
@@ -301,16 +289,14 @@ export interface Database {
           entity_id: string | null;
           metadata: Json;
           created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["activity_logs"]["Row"]> & {
+        },
+        Partial<Database["public"]["Tables"]["activity_logs"]["Row"]> & {
           action: string;
           entity_type: string;
-        };
-        Update: Partial<Database["public"]["Tables"]["activity_logs"]["Row"]>;
-        Relationships: [];
-      };
-      product_views: {
-        Row: {
+        }
+      >;
+      product_views: Table<
+        {
           id: string;
           product_id: string;
           user_id: string | null;
@@ -319,14 +305,28 @@ export interface Database {
           duration_seconds: number;
           interactions: number;
           created_at: string;
-        };
-        Insert: Partial<Database["public"]["Tables"]["product_views"]["Row"]> & {
+        },
+        Partial<Database["public"]["Tables"]["product_views"]["Row"]> & {
           product_id: string;
           viewer_mode: "image" | "360" | "3d" | "ar";
-        };
-        Update: Partial<Database["public"]["Tables"]["product_views"]["Row"]>;
-        Relationships: [];
-      };
+        }
+      >;
+      stock_reservations: Table<
+        Timestamps & {
+          id: string;
+          order_id: string;
+          variant_id: string;
+          quantity: number;
+          status: "active" | "finalized" | "expired" | "cancelled";
+          expires_at: string;
+        },
+        Partial<Database["public"]["Tables"]["stock_reservations"]["Row"]> & {
+          order_id: string;
+          variant_id: string;
+          quantity: number;
+          expires_at: string;
+        }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -347,8 +347,24 @@ export interface Database {
         };
         Returns: { order_id: string; order_number: string; grand_total: number }[];
       };
+      finalize_paid_order: {
+        Args: {
+          p_order_id: string;
+          p_provider: string;
+          p_provider_transaction_id: string;
+          p_amount: number;
+          p_currency: string;
+        };
+        Returns: boolean;
+      };
+      release_expired_stock_reservations: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
     };
-    Enums: Record<string, never>;
+    Enums: {
+      stock_reservation_status: "active" | "finalized" | "expired" | "cancelled";
+    };
     CompositeTypes: Record<string, never>;
   };
 }
