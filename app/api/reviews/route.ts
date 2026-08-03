@@ -12,16 +12,8 @@ const bodySchema = z.object({
   content: z.string().min(1).max(2000),
 });
 
-/**
- * POST /api/reviews
- * Requires Supabase Auth (session cookie) since a review must be tied to a
- * real user + a real delivered order_item — this can't work in pure Mock
- * Mode without a database, so it returns a clear message when Supabase
- * isn't configured. Rate-limited to 3 submissions/minute/user to slow down
- * review spam/abuse.
- */
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json(
       { ok: false, message: "การส่งรีวิวต้องเชื่อมต่อ Supabase ก่อน (ไม่รองรับใน Mock Mode)" },
@@ -29,10 +21,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ ok: false, message: "กรุณาเข้าสู่ระบบก่อนเขียนรีวิว" }, { status: 401 });
   }
@@ -51,9 +40,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "ข้อมูลรีวิวไม่ถูกต้อง" }, { status: 400 });
   }
 
-  // Verify the order_item belongs to this user and the order is delivered —
-  // RLS also enforces this at the database layer (defense in depth), but we
-  // check here too so we can return a friendly, specific error message.
   const { data: orderItem } = await supabase
     .from("order_items")
     .select("id, order_id, orders!inner(user_id, status)")
@@ -88,6 +74,5 @@ export async function POST(request: NextRequest) {
   }
 
   await writeAuditLog({ userId: user.id, action: "review.submit", entityType: "review", entityId: data.id });
-
   return NextResponse.json({ ok: true, message: "ส่งรีวิวสำเร็จ รอการตรวจสอบก่อนเผยแพร่", review: data });
 }
