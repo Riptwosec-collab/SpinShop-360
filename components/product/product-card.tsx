@@ -75,9 +75,9 @@ export function ProductCard({ product, view = "grid" }: { product: Product; view
         <Link href={href} className="focus-ring absolute inset-0 z-10 rounded-xl" aria-label={`ดูรายละเอียด ${product.name}`} />
 
         <div className="pointer-events-none absolute left-2 top-2 z-20 flex flex-col gap-1">
-          {product.supports3d && <ProductBadge type="3d" />}
-          {product.supports360 && <ProductBadge type="360" />}
-          {product.supportsAr && <ProductBadge type="ar" />}
+          {product.supports3d && <ProductBadge kind="3d" />}
+          {product.supports360 && <ProductBadge kind="360" />}
+          {product.supportsAr && <ProductBadge kind="ar" />}
         </div>
 
         <button
