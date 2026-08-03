@@ -1,26 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 const bodySchema = z.object({
   token: z.string().startsWith("tokn_", "Token ไม่ถูกต้อง"),
-  orderId: z.string(),
-  orderNumber: z.string(),
-  amount: z.number().positive(),
-  currency: z.string().default("THB"),
+  orderId: z.string().uuid(),
+  orderNumber: z.string().min(1),
   customerEmail: z.string().email(),
 });
 
 const OMISE_API_BASE = "https://api.omise.co";
 
-/**
- * POST /api/payments/omise/charge-card
- *
- * Exchanges a client-tokenized card (`tokn_...`, produced by
- * `OmiseCardForm` via Omise.js) for an actual charge. This is the only
- * place raw payment authorization happens for Omise card payments — the
- * token itself is single-use and worthless without our secret key, so
- * even if a token leaked in transit it can't be replayed elsewhere.
- */
 export async function POST(request: NextRequest) {
   const secretKey = process.env.OMISE_SECRET_KEY;
   if (!secretKey) {
@@ -33,17 +23,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "ข้อมูลคำขอไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const authHeader = `Basic ${Buffer.from(`${secretKey}:`).toString("base64")}`;
+  const serviceClient = createSupabaseServiceClient();
+  if (!serviceClient) {
+    return NextResponse.json({ ok: false, message: "ระบบฐานข้อมูลยังไม่ได้ตั้งค่า" }, { status: 501 });
+  }
 
+  const { data: order, error } = await serviceClient
+    .from("orders")
+    .select("id, order_number, email, grand_total, payment_status, status")
+    .eq("id", parsed.data.orderId)
+    .eq("order_number", parsed.data.orderNumber)
+    .maybeSingle();
+
+  if (error || !order) return NextResponse.json({ ok: false, message: "ไม่พบคำสั่งซื้อ" }, { status: 404 });
+  if (order.email.toLowerCase() !== parsed.data.customerEmail.toLowerCase()) {
+    return NextResponse.json({ ok: false, message: "ข้อมูลเจ้าของคำสั่งซื้อไม่ถูกต้อง" }, { status: 403 });
+  }
+  if (order.payment_status === "paid" || ["cancelled", "refunded"].includes(order.status)) {
+    return NextResponse.json({ ok: false, message: "คำสั่งซื้อนี้ไม่สามารถชำระเงินได้" }, { status: 409 });
+  }
+
+  const authHeader = `Basic ${Buffer.from(`${secretKey}:`).toString("base64")}`;
   try {
     const chargeRes = await fetch(`${OMISE_API_BASE}/charges`, {
       method: "POST",
       headers: { Authorization: authHeader, "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        amount: String(Math.round(parsed.data.amount * 100)),
-        currency: parsed.data.currency.toLowerCase(),
+        amount: String(Math.round(Number(order.grand_total) * 100)),
+        currency: "thb",
         card: parsed.data.token,
-        metadata: JSON.stringify({ orderId: parsed.data.orderId, orderNumber: parsed.data.orderNumber }),
+        metadata: JSON.stringify({ orderId: order.id, orderNumber: order.order_number }),
       }),
     });
 
@@ -51,7 +60,6 @@ export async function POST(request: NextRequest) {
     if (!chargeRes.ok) {
       return NextResponse.json({ ok: false, message: charge?.message ?? "การชำระเงินไม่สำเร็จ" }, { status: 402 });
     }
-
     if (charge.status === "failed") {
       return NextResponse.json({ ok: false, message: "บัตรถูกปฏิเสธ กรุณาลองบัตรอื่น" }, { status: 402 });
     }
@@ -61,7 +69,7 @@ export async function POST(request: NextRequest) {
       message: charge.status === "successful" ? "ชำระเงินสำเร็จ" : "กำลังตรวจสอบการชำระเงิน",
       providerTransactionId: charge.id,
       status: charge.status,
-      authorizeUri: charge.authorize_uri ?? null, // 3-D Secure redirect, if required
+      authorizeUri: charge.authorize_uri ?? null,
     });
   } catch (err) {
     return NextResponse.json(
