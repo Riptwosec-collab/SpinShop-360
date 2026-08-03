@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --background: 7 10 18;
+  --surface: 16 21 34;
+  --surface-secondary: 23 30 48;
+  --border: 49 60 84;
+  --foreground: 241 245 249;
+  --muted: 148 163 184;
+  --primary: 99 102 241;
+  --primary-hover: 79 70 229;
+  --accent: 6 182 212;
+  --success: 34 197 94;
+  --warning: 245 158 11;
+  --danger: 239 68 68;
+}
+
+html.light {
+  color-scheme: light;
+  --background: 248 250 252;
+  --surface: 255 255 255;
+  --surface-secondary: 241 245 249;
+  --border: 203 213 225;
+  --foreground: 15 23 42;
+  --muted: 100 116 139;
+  --primary: 79 70 229;
+  --primary-hover: 67 56 202;
+  --accent: 8 145 178;
+  --success: 22 163 74;
+  --warning: 217 119 6;
+  --danger: 220 38 38;
+}
+
+* {
+  border-color: rgb(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-family: "IBM Plex Sans Thai", "Noto Sans Thai", "Leelawadee UI", Inter, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .input {
+    @apply focus-ring w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted/70 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
