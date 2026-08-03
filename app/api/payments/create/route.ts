@@ -14,10 +14,7 @@ function checkoutCookieName(orderId: string) {
   return `spinshop_checkout_${orderId}`;
 }
 
-/**
- * Creates a gateway payment from the canonical order stored in the database.
- * The browser cannot choose the amount, currency, order number or return URL.
- */
+/** Creates a gateway payment from the canonical order stored in the database. */
 export async function POST(request: NextRequest) {
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
@@ -25,8 +22,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "ข้อมูลคำขอไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const suppliedToken =
-    parsed.data.paymentToken ?? request.cookies.get(checkoutCookieName(parsed.data.orderId))?.value;
+  const suppliedToken = parsed.data.paymentToken ?? request.cookies.get(checkoutCookieName(parsed.data.orderId))?.value;
   const token = suppliedToken ? verifyCheckoutToken(suppliedToken, parsed.data.orderId) : null;
   if (!token) {
     return NextResponse.json({ ok: false, message: "สิทธิ์ชำระเงินหมดอายุหรือไม่ถูกต้อง" }, { status: 401 });
@@ -49,7 +45,7 @@ export async function POST(request: NextRequest) {
   if (order.payment_status === "paid") {
     return NextResponse.json({ ok: false, message: "คำสั่งซื้อนี้ชำระเงินแล้ว" }, { status: 409 });
   }
-  if (order.status === "cancelled") {
+  if (String(order.status) === "cancelled") {
     return NextResponse.json({ ok: false, message: "คำสั่งซื้อนี้หมดอายุหรือถูกยกเลิกแล้ว" }, { status: 409 });
   }
   if (order.payment_method !== parsed.data.method) {
