@@ -11,6 +11,16 @@ export class StripePaymentAdapter implements PaymentAdapter {
   }
 
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+    if (input.method === "bank_transfer") {
+      return {
+        ok: false,
+        message: "การโอนผ่านธนาคารยังไม่ได้ตั้งค่าสำหรับ Stripe กรุณาเลือกบัตรหรือ PromptPay",
+      };
+    }
+    if (input.method === "cod") {
+      return { ok: false, message: "เก็บเงินปลายทางไม่ต้องเรียก Payment Gateway" };
+    }
+
     try {
       const metadata = { orderId: input.orderId, orderNumber: input.orderNumber };
       const session = await this.stripe.checkout.sessions.create(
@@ -42,10 +52,10 @@ export class StripePaymentAdapter implements PaymentAdapter {
         redirectUrl: session.url ?? undefined,
         providerTransactionId: session.id,
       };
-    } catch (err) {
+    } catch (error) {
       return {
         ok: false,
-        message: err instanceof Error ? err.message : "ไม่สามารถสร้างรายการชำระเงินได้",
+        message: error instanceof Error ? error.message : "ไม่สามารถสร้างรายการชำระเงินได้",
       };
     }
   }
