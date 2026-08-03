@@ -1,0 +1,81 @@
+name: Upgrade Next Once
+
+on:
+  push:
+    branches: [agent/fix-production-readiness]
+    paths:
+      - .github/workflows/next-upgrade-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/fix-production-readiness
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Upgrade framework and React dependencies
+        run: |
+          npm install --save-exact \
+            next@16.2.12 \
+            react@latest \
+            react-dom@latest \
+            @react-three/fiber@latest \
+            @react-three/drei@latest
+          npm install --save-dev --save-exact \
+            eslint@latest \
+            eslint-config-next@16.2.12 \
+            @types/react@latest \
+            @types/react-dom@latest
+          npm pkg set scripts.lint="eslint ."
+
+      - name: Create Next.js 16 ESLint flat config
+        run: |
+          rm -f .eslintrc.json
+          cat > eslint.config.mjs <<'EOF'
+          import { defineConfig, globalIgnores } from "eslint/config";
+          import nextVitals from "eslint-config-next/core-web-vitals";
+          import nextTs from "eslint-config-next/typescript";
+
+          export default defineConfig([
+            ...nextVitals,
+            ...nextTs,
+            globalIgnores([
+              ".next/**",
+              "out/**",
+              "build/**",
+              "next-env.d.ts",
+            ]),
+            {
+              rules: {
+                "@next/next/no-img-element": "warn",
+              },
+            },
+          ]);
+          EOF
+
+      - name: Verify production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Remove one-time workflow
+        run: rm .github/workflows/next-upgrade-once.yml
+
+      - name: Commit generated lockfile and dependency upgrade
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json eslint.config.mjs .eslintrc.json .github/workflows/next-upgrade-once.yml
+          git commit -m "upgrade Next.js and React dependencies"
+          git push origin HEAD:agent/fix-production-readiness
