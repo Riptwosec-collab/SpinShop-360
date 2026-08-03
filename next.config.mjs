@@ -1,7 +1,19 @@
 import { withSentryConfig } from "@sentry/nextjs";
 
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(self), microphone=(), geolocation=(), payment=(self), usb=()",
+  },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
@@ -11,11 +23,20 @@ const nextConfig = {
   eslint: {
     dirs: ["app", "components", "lib", "types"],
   },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+      {
+        source: "/api/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+    ];
+  },
 };
 
-// withSentryConfig only uploads source maps when SENTRY_AUTH_TOKEN (+ org/
-// project) are present in the environment; without them it's a no-op wrapper
-// so local dev and CI builds work identically with or without Sentry set up.
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
@@ -23,4 +44,3 @@ export default withSentryConfig(nextConfig, {
   silent: true,
   widenClientFileUpload: true,
 });
-
