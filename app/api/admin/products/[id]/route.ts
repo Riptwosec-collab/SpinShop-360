@@ -6,14 +6,10 @@ import { writeAuditLog } from "@/lib/audit-log";
 import type { Database } from "@/types/database";
 
 type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
+interface RouteContext { params: Promise<{ id: string }> }
 
-/**
- * PATCH /api/admin/products/[id]
- * Updates an existing product. Accepts a partial payload — only fields
- * present are written, so the client doesn't need to resend the entire
- * product on every keystroke-driven autosave in the future.
- */
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const { id } = await params;
   const session = await requireAdminSession();
   if (!session) {
     return NextResponse.json(
@@ -61,7 +57,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   if (input.seoTitle !== undefined) patch.seo_title = input.seoTitle;
   if (input.seoDescription !== undefined) patch.seo_description = input.seoDescription;
 
-  const { data, error } = await supabase.from("products").update(patch).eq("id", params.id).select().single();
+  const { data, error } = await supabase.from("products").update(patch).eq("id", id).select().single();
 
   if (error) {
     const message = error.code === "23505" ? "SKU หรือ Slug นี้มีอยู่ในระบบแล้ว" : "ไม่สามารถบันทึกการเปลี่ยนแปลงได้";
@@ -72,21 +68,15 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     userId: session.userId,
     action: "product.update",
     entityType: "product",
-    entityId: params.id,
+    entityId: id,
     metadata: { changedFields: Object.keys(patch) },
   });
 
   return NextResponse.json({ ok: true, message: "บันทึกการเปลี่ยนแปลงสำเร็จ", product: data });
 }
 
-/**
- * DELETE /api/admin/products/[id]
- * Soft delete only — sets `deleted_at` and `status: archived` rather than
- * removing the row, so historical orders that reference this product still
- * resolve correctly (order_items keep their own name/price/sku snapshot
- * regardless, but the product record itself stays available for audit).
- */
-export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id } = await params;
   const session = await requireAdminSession();
   if (!session) {
     return NextResponse.json({ ok: false, message: "ต้องเข้าสู่ระบบด้วยสิทธิ์ผู้ดูแล" }, { status: 401 });
@@ -100,13 +90,13 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
   const { error } = await supabase
     .from("products")
     .update({ status: "archived", deleted_at: new Date().toISOString() })
-    .eq("id", params.id);
+    .eq("id", id);
 
   if (error) {
     return NextResponse.json({ ok: false, message: "ไม่สามารถลบสินค้าได้" }, { status: 400 });
   }
 
-  await writeAuditLog({ userId: session.userId, action: "product.delete", entityType: "product", entityId: params.id });
+  await writeAuditLog({ userId: session.userId, action: "product.delete", entityType: "product", entityId: id });
 
   return NextResponse.json({ ok: true, message: "ลบสินค้าสำเร็จ (Soft Delete)" });
 }
