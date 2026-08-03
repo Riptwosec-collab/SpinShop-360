@@ -19,21 +19,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "อีเมลไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   if (supabase) {
-    // Supabase sends its own branded reset email via its configured SMTP
-    // provider — no need to call our custom adapter in this path.
     const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
       redirectTo: `${request.nextUrl.origin}/reset-password`,
     });
-    if (error) {
-      // Don't leak whether the email exists — respond success either way.
-      // eslint-disable-next-line no-console
-      console.error("[forgot-password]", error.message);
-    }
+    if (error) console.error("[forgot-password]", error.message);
   } else {
-    // Mock Mode: send via our own adapter so the flow is still demonstrable.
     await getActiveEmailAdapter().send({
       to: parsed.data.email,
       subject: "รีเซ็ตรหัสผ่าน — SpinShop 360",
@@ -41,6 +34,5 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Always return success — never reveal whether an email is registered.
   return NextResponse.json({ ok: true, message: "หากอีเมลนี้มีอยู่ในระบบ เราได้ส่งลิงก์รีเซ็ตรหัสผ่านไปแล้ว" });
 }
