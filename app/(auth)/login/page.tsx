@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -13,6 +13,14 @@ function safeNextPath(value: string | null) {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFormSkeleton />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
@@ -117,6 +125,18 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
+    </div>
+  );
+}
+
+function LoginFormSkeleton() {
+  return (
+    <div className="mx-auto flex min-h-[70vh] max-w-md animate-pulse flex-col justify-center px-4 py-12" aria-label="กำลังโหลดแบบฟอร์มเข้าสู่ระบบ">
+      <div className="h-8 w-36 rounded bg-surface-secondary" />
+      <div className="mt-2 h-4 w-72 rounded bg-surface-secondary" />
+      <div className="mt-8 h-11 rounded-lg bg-surface-secondary" />
+      <div className="mt-4 h-11 rounded-lg bg-surface-secondary" />
+      <div className="mt-4 h-12 rounded-lg bg-primary/20" />
     </div>
   );
 }
