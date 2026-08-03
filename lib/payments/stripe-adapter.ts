@@ -12,6 +12,7 @@ export class StripePaymentAdapter implements PaymentAdapter {
 
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
     try {
+      const metadata = { orderId: input.orderId, orderNumber: input.orderNumber };
       const session = await this.stripe.checkout.sessions.create(
         {
           mode: "payment",
@@ -27,7 +28,8 @@ export class StripePaymentAdapter implements PaymentAdapter {
               quantity: 1,
             },
           ],
-          metadata: { orderId: input.orderId, orderNumber: input.orderNumber },
+          metadata,
+          payment_intent_data: { metadata },
           success_url: `${input.returnUrl}?payment=success`,
           cancel_url: `${input.returnUrl}?payment=cancelled`,
         },
@@ -70,6 +72,7 @@ export class StripePaymentAdapter implements PaymentAdapter {
         return {
           type: "payment.failed",
           providerTransactionId: intent.id,
+          orderId: intent.metadata?.orderId,
           amount: intent.amount / 100,
           currency: intent.currency.toUpperCase(),
         };
@@ -79,6 +82,7 @@ export class StripePaymentAdapter implements PaymentAdapter {
         return {
           type: "payment.refunded",
           providerTransactionId: charge.id,
+          orderId: charge.metadata?.orderId,
           amount: charge.amount_refunded / 100,
           currency: charge.currency.toUpperCase(),
         };
