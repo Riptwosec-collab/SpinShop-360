@@ -7,45 +7,55 @@ import { writeAuditLog } from "@/lib/audit-log";
 import { generateOrderNumber, formatCurrency } from "@/lib/utils";
 import { addressSchema } from "@/lib/validators/checkout";
 import { getActiveEmailAdapter, orderConfirmationEmail } from "@/lib/email";
+import { createCheckoutToken } from "@/lib/checkout-token";
 
 const bodySchema = z.object({
-  email: z.string().email(),
-  phone: z.string(),
-  items: z.array(
-    z.object({
-      productId: z.string(),
-      variantId: z.string(),
-      quantity: z.number().int().positive(),
-      productName: z.string(),
-      variantLabel: z.string(),
-      slug: z.string(),
-      imageUrl: z.string(),
-      unitPrice: z.number(),
-      compareAtPrice: z.number().nullable().optional(),
-      stockQuantity: z.number(),
-      id: z.string(),
-    })
-  ),
+  email: z.string().email().max(320),
+  phone: z.string().min(8).max(30),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        variantId: z.string().min(1),
+        quantity: z.number().int().positive().max(99),
+        productName: z.string().optional(),
+        variantLabel: z.string().optional(),
+        slug: z.string().optional(),
+        imageUrl: z.string().optional(),
+        unitPrice: z.number().optional(),
+        compareAtPrice: z.number().nullable().optional(),
+        stockQuantity: z.number().optional(),
+        id: z.string().optional(),
+      })
+    )
+    .min(1)
+    .max(100),
   shippingAddress: addressSchema,
   paymentMethod: z.enum(["promptpay", "credit_card", "debit_card", "bank_transfer", "cod"]),
   shippingMethod: z.enum(["standard", "express"]),
-  couponCode: z.string().nullable().optional(),
-  discount: z.number().nonnegative().optional(),
-  customerNote: z.string().optional(),
-  shippingFee: z.number().nonnegative(),
+  couponCode: z.string().trim().max(50).nullable().optional(),
+  customerNote: z.string().max(1000).optional(),
 });
 
+function orderErrorMessage(message: string) {
+  if (message.includes("empty_cart")) return "ตะกร้าสินค้าว่างเปล่า";
+  if (message.includes("insufficient_stock")) return "สินค้าบางรายการมีไม่เพียงพอในสต็อก กรุณาลองใหม่";
+  if (message.includes("variant_not_found") || message.includes("product_not_available")) {
+    return "ไม่พบสินค้าบางรายการ หรือสินค้าถูกปิดการขายแล้ว";
+  }
+  if (message.includes("coupon_invalid")) return "ไม่พบคูปองนี้ หรือคูปองถูกปิดใช้งานแล้ว";
+  if (message.includes("coupon_not_started")) return "คูปองยังไม่เริ่มใช้งาน";
+  if (message.includes("coupon_expired")) return "คูปองหมดอายุแล้ว";
+  if (message.includes("coupon_minimum_not_met")) return "ยอดสั่งซื้อไม่ถึงขั้นต่ำของคูปอง";
+  if (message.includes("coupon_usage_limit") || message.includes("coupon_user_limit")) {
+    return "คูปองถูกใช้ครบจำนวนที่กำหนดแล้ว";
+  }
+  return "ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่";
+}
+
 /**
- * POST /api/orders
- *
- * This is the ONLY place an order is ever created. It re-derives price and
- * stock from the database (never the client's cached cart values) and, in
- * Supabase mode, wraps stock-decrement + order-insert in a single Postgres
- * transaction (`create_order_with_stock_check`) via row locking so
- * concurrent checkouts cannot oversell the last unit of a variant.
- *
- * Falls back to the in-memory Mock order service when Supabase isn't
- * configured, so local development keeps working without a database.
+ * Creates an order from canonical database prices and stock. Client-provided
+ * totals, discounts, shipping fees and product labels are never trusted.
  */
 export async function POST(request: NextRequest) {
   const json = await request.json().catch(() => null);
@@ -58,86 +68,121 @@ export async function POST(request: NextRequest) {
   const serviceClient = createSupabaseServiceClient();
 
   if (!serviceClient) {
-    // Mock Mode fallback — mirrors the same validation logic client-side.
     const result = await createOrderMock({
       email: parsed.data.email,
       phone: parsed.data.phone,
-      items: parsed.data.items,
+      items: parsed.data.items as never,
       shippingAddress: parsed.data.shippingAddress,
       paymentMethod: parsed.data.paymentMethod,
       shippingMethod: parsed.data.shippingMethod,
       couponCode: parsed.data.couponCode,
-      discount: parsed.data.discount,
       customerNote: parsed.data.customerNote,
     });
-    return NextResponse.json(result, { status: result.ok ? 200 : 400 });
+    return NextResponse.json(result, {
+      status: result.ok ? 200 : 400,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   const userId = supabaseAuth ? (await supabaseAuth.auth.getUser()).data.user?.id ?? null : null;
-  const orderNumber = generateOrderNumber();
+  let data: unknown = null;
+  let rpcError: { message: string } | null = null;
 
-  const { data, error } = await serviceClient.rpc("create_order_with_stock_check", {
-    p_order_number: orderNumber,
-    p_user_id: userId,
-    p_email: parsed.data.email,
-    p_phone: parsed.data.phone,
-    p_items: parsed.data.items.map((i) => ({
-      product_id: i.productId,
-      variant_id: i.variantId,
-      quantity: i.quantity,
-    })),
-    p_shipping_address: parsed.data.shippingAddress,
-    p_payment_method: parsed.data.paymentMethod,
-    p_shipping_method: parsed.data.shippingMethod,
-    p_shipping_fee: parsed.data.shippingFee,
-    p_discount_amount: parsed.data.discount ?? 0,
-    p_coupon_code: parsed.data.couponCode ?? null,
-    p_customer_note: parsed.data.customerNote ?? null,
-  });
+  // Retry rare order-number collisions without asking the customer to resubmit.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const orderNumber = generateOrderNumber();
+    const result = await serviceClient.rpc("create_order_with_stock_check", {
+      p_order_number: orderNumber,
+      p_user_id: userId,
+      p_email: parsed.data.email,
+      p_phone: parsed.data.phone,
+      p_items: parsed.data.items.map((item) => ({
+        product_id: item.productId,
+        variant_id: item.variantId,
+        quantity: item.quantity,
+      })),
+      p_shipping_address: parsed.data.shippingAddress,
+      p_payment_method: parsed.data.paymentMethod,
+      p_shipping_method: parsed.data.shippingMethod,
+      // Kept for backwards-compatible RPC signature. The database ignores both.
+      p_shipping_fee: 0,
+      p_discount_amount: 0,
+      p_coupon_code: parsed.data.couponCode ?? null,
+      p_customer_note: parsed.data.customerNote ?? null,
+    });
 
-  if (error) {
-    const isExpectedError = error.message.includes("insufficient_stock") || error.message.includes("variant_not_found");
-    if (!isExpectedError) {
-      Sentry.captureException(new Error(`create_order_with_stock_check failed: ${error.message}`));
+    data = result.data;
+    rpcError = result.error;
+    if (!rpcError || !rpcError.message.includes("orders_order_number_key")) break;
+  }
+
+  if (rpcError) {
+    const expectedPrefixes = [
+      "empty_cart",
+      "insufficient_stock",
+      "variant_not_found",
+      "product_not_available",
+      "coupon_",
+      "invalid_shipping_method",
+      "invalid_payment_method",
+    ];
+    if (!expectedPrefixes.some((prefix) => rpcError!.message.includes(prefix))) {
+      Sentry.captureException(new Error(`create_order_with_stock_check failed: ${rpcError.message}`));
     }
-    const message = error.message.includes("insufficient_stock")
-      ? "สินค้าบางรายการมีไม่เพียงพอในสต็อก กรุณาลองใหม่"
-      : error.message.includes("variant_not_found")
-        ? "ไม่พบสินค้าบางรายการในระบบ"
-        : "ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่";
-    return NextResponse.json({ ok: false, message }, { status: 400 });
+    return NextResponse.json({ ok: false, message: orderErrorMessage(rpcError.message) }, { status: 400 });
   }
 
   const result = Array.isArray(data) ? data[0] : data;
+  if (!result || typeof result !== "object" || !("order_id" in result)) {
+    Sentry.captureMessage("Order RPC returned an invalid response");
+    return NextResponse.json({ ok: false, message: "ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่" }, { status: 500 });
+  }
+
+  const order = result as { order_id: string; order_number: string; grand_total: number };
+  const paymentToken = parsed.data.paymentMethod === "cod"
+    ? null
+    : createCheckoutToken(order.order_id, order.order_number);
 
   await writeAuditLog({
     userId,
     action: "order.create",
     entityType: "order",
-    entityId: result.order_id,
-    metadata: { orderNumber: result.order_number, grandTotal: result.grand_total },
+    entityId: order.order_id,
+    metadata: { orderNumber: order.order_number, grandTotal: order.grand_total },
   });
 
-  // Fire-and-forget — a failed confirmation email should never block the
-  // checkout response the customer is waiting on.
-  const itemsHtml = parsed.data.items
-    .map((i) => `<p>${i.productName} x${i.quantity} — ${formatCurrency(i.unitPrice * i.quantity)}</p>`)
+  const { data: canonicalItems } = await serviceClient
+    .from("order_items")
+    .select("product_name, quantity, line_total")
+    .eq("order_id", order.order_id);
+
+  const itemsHtml = (canonicalItems ?? [])
+    .map((item) => `<p>${item.product_name} x${item.quantity} — ${formatCurrency(item.line_total)}</p>`)
     .join("");
-  getActiveEmailAdapter()
+
+  await getActiveEmailAdapter()
     .send({
       to: parsed.data.email,
-      subject: `ยืนยันคำสั่งซื้อ ${result.order_number} — SpinShop 360`,
+      subject: `ยืนยันคำสั่งซื้อ ${order.order_number} — SpinShop 360`,
       html: orderConfirmationEmail({
-        orderNumber: result.order_number,
+        orderNumber: order.order_number,
         itemsHtml,
-        grandTotal: formatCurrency(result.grand_total),
+        grandTotal: formatCurrency(order.grand_total),
       }),
     })
     .catch(() => undefined);
 
-  return NextResponse.json({
-    ok: true,
-    message: "สร้างคำสั่งซื้อสำเร็จ",
-    order: { id: result.order_id, orderNumber: result.order_number, grandTotal: result.grand_total },
-  });
+  return NextResponse.json(
+    {
+      ok: true,
+      message: "สร้างคำสั่งซื้อสำเร็จ",
+      order: {
+        id: order.order_id,
+        orderNumber: order.order_number,
+        grandTotal: order.grand_total,
+        paymentToken,
+      },
+    },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
