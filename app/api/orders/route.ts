@@ -57,10 +57,21 @@ function checkoutCookieName(orderId: string) {
   return `spinshop_checkout_${orderId}`;
 }
 
-/**
- * Creates an order from canonical database prices and stock. Client-provided
- * totals, discounts, shipping fees and product labels are never trusted.
- */
+function orderViewCookieName(orderNumber: string) {
+  return `spinshop_order_${orderNumber}`;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
+  })[character] ?? character);
+}
+
+/** Creates an order from canonical database prices and stock. */
 export async function POST(request: NextRequest) {
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
@@ -144,6 +155,7 @@ export async function POST(request: NextRequest) {
   const paymentToken = parsed.data.paymentMethod === "cod"
     ? null
     : createCheckoutToken(order.order_id, order.order_number);
+  const orderViewToken = createCheckoutToken(order.order_id, order.order_number, 7 * 24 * 60 * 60);
 
   await writeAuditLog({
     userId,
@@ -159,7 +171,7 @@ export async function POST(request: NextRequest) {
     .eq("order_id", order.order_id);
 
   const itemsHtml = (canonicalItems ?? [])
-    .map((item) => `<p>${item.product_name} x${item.quantity} — ${formatCurrency(item.line_total)}</p>`)
+    .map((item) => `<p>${escapeHtml(item.product_name)} x${item.quantity} — ${formatCurrency(item.line_total)}</p>`)
     .join("");
 
   await getActiveEmailAdapter()
@@ -187,13 +199,25 @@ export async function POST(request: NextRequest) {
     { headers: { "Cache-Control": "no-store" } }
   );
 
+  const cookieBase = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict" as const,
+  };
+
+  response.cookies.set({
+    ...cookieBase,
+    name: orderViewCookieName(order.order_number),
+    value: orderViewToken,
+    path: "/api/orders",
+    maxAge: 7 * 24 * 60 * 60,
+  });
+
   if (paymentToken) {
     response.cookies.set({
+      ...cookieBase,
       name: checkoutCookieName(order.order_id),
       value: paymentToken,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
       path: "/api/payments",
       maxAge: 30 * 60,
     });
