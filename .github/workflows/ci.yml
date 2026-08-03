@@ -110,8 +110,20 @@ jobs:
           rm .github/workflows/next-upgrade-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+
+          # Refresh the workflow from the current remote branch so this generated
+          # commit never overwrites a newer CI definition pushed while the job ran.
+          git fetch origin "${{ github.head_ref }}"
+          git checkout "origin/${{ github.head_ref }}" -- .github/workflows/ci.yml
+
+          git add -A -- \
+            package.json \
+            package-lock.json \
+            eslint.config.mjs \
+            .eslintrc.json \
+            .github/workflows/next-upgrade-once.yml
           git commit -m "upgrade Next.js and React dependencies"
+          git rebase "origin/${{ github.head_ref }}"
           git push origin HEAD:${{ github.head_ref }}
 
   quality:
