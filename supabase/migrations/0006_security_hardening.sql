@@ -7,23 +7,17 @@ grant update (full_name, phone, avatar_url) on table profiles to authenticated;
 -- Orders and audit events must be created by trusted server code only.
 drop policy if exists "orders_owner_insert" on orders;
 drop policy if exists "activity_logs_insert_any" on activity_logs;
-create policy "activity_logs_service_only" on activity_logs
-  for insert with check (false);
+create policy "activity_logs_service_only" on activity_logs for insert with check (false);
 
--- Review owners may edit their text only through trusted endpoints. Direct
--- table UPDATE is disabled so status, verified flags and counters cannot be
--- promoted by the author.
+-- Prevent review authors from changing moderation and verification columns.
 drop policy if exists "reviews_owner_update" on reviews;
 
--- Prevent direct discovery of all active coupon codes. Coupon validation is
--- performed by the server route using a service-role client.
+-- Coupon codes are validated by a trusted route, not enumerated by clients.
 drop policy if exists "coupons_public_read_active" on coupons;
-create policy "coupons_staff_read" on coupons
-  for select using (is_staff_or_admin());
+create policy "coupons_staff_read" on coupons for select using (is_staff_or_admin());
 
--- Replace order creation with a server-authoritative implementation. Client
--- supplied shipping fee and discount parameters remain for API compatibility
--- but are deliberately ignored.
+-- Client supplied shipping and discount parameters are retained for backwards
+-- API compatibility but intentionally ignored.
 create or replace function create_order_with_stock_check(
   p_order_number text,
   p_user_id uuid,
@@ -47,55 +41,45 @@ declare
   v_item record;
   v_variant product_variants%rowtype;
   v_product products%rowtype;
+  v_coupon coupons%rowtype;
   v_subtotal numeric := 0;
   v_shipping_fee numeric := 0;
   v_discount numeric := 0;
   v_grand_total numeric;
   v_order_id uuid;
-  v_coupon coupons%rowtype;
 begin
-  if coalesce(array_length(p_items, 1), 0) = 0 then
-    raise exception 'empty_cart';
-  end if;
+  if coalesce(array_length(p_items, 1), 0) = 0 then raise exception 'empty_cart'; end if;
 
-  -- Aggregate duplicate variant rows before checking stock. This prevents a
-  -- duplicated variant in the payload from passing each individual check and
-  -- driving inventory negative.
   for v_item in
     select (x).variant_id as variant_id, sum((x).quantity)::integer as quantity
     from unnest(p_items) x
     group by (x).variant_id
     order by (x).variant_id
   loop
-    select * into v_variant
-    from product_variants
-    where id = v_item.variant_id and is_active = true
-    for update;
+    select * into v_variant from product_variants
+    where id = v_item.variant_id and is_active = true for update;
 
     if not found then raise exception 'variant_not_found:%', v_item.variant_id; end if;
     if v_item.quantity <= 0 then raise exception 'invalid_quantity'; end if;
-    if v_variant.stock_quantity < v_item.quantity then
-      raise exception 'insufficient_stock:%', v_item.variant_id;
-    end if;
+    if v_variant.stock_quantity < v_item.quantity then raise exception 'insufficient_stock:%', v_item.variant_id; end if;
 
-    select * into v_product
-    from products
+    select * into v_product from products
     where id = v_variant.product_id and status = 'active' and deleted_at is null;
     if not found then raise exception 'product_not_available:%', v_variant.product_id; end if;
 
     v_subtotal := v_subtotal + (v_variant.price * v_item.quantity);
   end loop;
 
-  v_shipping_fee := case
-    when p_shipping_method = 'express' then 100
-    when p_shipping_method = 'standard' and v_subtotal >= 1500 then 0
-    when p_shipping_method = 'standard' then 50
-    else raise_exception('invalid_shipping_method')
-  end;
+  if p_shipping_method = 'express' then
+    v_shipping_fee := 100;
+  elsif p_shipping_method = 'standard' then
+    v_shipping_fee := case when v_subtotal >= 1500 then 0 else 50 end;
+  else
+    raise exception 'invalid_shipping_method';
+  end if;
 
   if nullif(trim(p_coupon_code), '') is not null then
-    select * into v_coupon
-    from coupons
+    select * into v_coupon from coupons
     where upper(code) = upper(trim(p_coupon_code))
       and is_active = true
       and (starts_at is null or starts_at <= now())
@@ -142,8 +126,7 @@ begin
 
   for v_item in
     select (x).variant_id as variant_id, sum((x).quantity)::integer as quantity
-    from unnest(p_items) x
-    group by (x).variant_id
+    from unnest(p_items) x group by (x).variant_id
   loop
     select * into v_variant from product_variants where id = v_item.variant_id;
     select * into v_product from products where id = v_variant.product_id;
@@ -156,17 +139,10 @@ begin
     );
 
     update product_variants
-    set stock_quantity = stock_quantity - v_item.quantity,
-        updated_at = now()
+    set stock_quantity = stock_quantity - v_item.quantity, updated_at = now()
     where id = v_variant.id and stock_quantity >= v_item.quantity;
-
     if not found then raise exception 'concurrent_stock_change:%', v_variant.id; end if;
   end loop;
-
-  if found and v_coupon.id is not null and p_user_id is not null then
-    insert into coupon_usages (coupon_id, user_id, order_id, discount_amount)
-    values (v_coupon.id, p_user_id, v_order_id, v_discount);
-  end if;
 
   return query select v_order_id, p_order_number, v_grand_total;
 end;
