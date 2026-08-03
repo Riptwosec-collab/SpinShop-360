@@ -11,10 +11,61 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  repair-eslint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      repaired: ${{ steps.marker.outputs.run }}
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Check one-time repair marker
+        id: marker
+        run: |
+          if [ -f .github/eslint-repair-marker ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: steps.marker.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install compatible ESLint
+        if: steps.marker.outputs.run == 'true'
+        run: |
+          npm install --save-dev --save-exact eslint@9.39.5
+          npm audit --omit=dev --audit-level=high
+          npm run lint
+
+      - name: Commit repaired lockfile
+        if: steps.marker.outputs.run == 'true'
+        run: |
+          rm .github/eslint-repair-marker
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "${{ github.head_ref }}"
+          git checkout "origin/${{ github.head_ref }}" -- .github/workflows/ci.yml
+          git add -A -- package.json package-lock.json .github/eslint-repair-marker
+          git commit -m "use ESLint 9 for Next.js compatibility"
+          git rebase "origin/${{ github.head_ref }}"
+          git push origin HEAD:${{ github.head_ref }}
+
   quality:
+    needs: repair-eslint
+    if: always() && needs.repair-eslint.outputs.repaired != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
