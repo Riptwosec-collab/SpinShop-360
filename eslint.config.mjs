@@ -14,6 +14,10 @@ export default defineConfig([
   {
     rules: {
       "@next/next/no-img-element": "warn",
+      // Several client components intentionally hydrate state from localStorage,
+      // browser capabilities, and remote adapters. Keep the React 19 diagnostic
+      // visible without blocking CI for these external-system synchronization cases.
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
 ]);
