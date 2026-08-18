@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Image as ImageIcon, RotateCw, Box, Smartphone, Palette } from "lucide-react";
 import type { Product, ViewerMode } from "@/types/product";
 import { ImageGallery } from "./image-gallery";
 import { Product360Viewer } from "./product-360-viewer";
 import { Product3DViewer } from "./product-3d-viewer";
 import { Product3DMaterialViewer } from "./product-3d-material-viewer";
+import { ProductGenerated3DViewer } from "./product-generated-3d-viewer";
+import {
+  getGeneratedProductModelKind,
+  getProduct3DColorOptions,
+  getRealProductModelUrl,
+} from "@/lib/product-3d-assets";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 
@@ -23,12 +29,19 @@ const MODE_META: Record<ExtendedViewerMode, { label: string; icon: React.Compone
 };
 
 export function ProductViewer({ product }: { product: Product }) {
+  const realModelUrl = useMemo(() => getRealProductModelUrl(product), [product]);
+  const generatedModelKind = useMemo(() => getGeneratedProductModelKind(product), [product]);
+  const generatedColors = useMemo(() => getProduct3DColorOptions(product), [product]);
+
+  const hasInteractive3D = Boolean(product.supports3d && (realModelUrl || generatedModelKind));
+  const hasRealAr = Boolean(product.supportsAr && realModelUrl);
+
   const availableModes: ExtendedViewerMode[] = [
     "image",
     ...(product.supports360 && product.threeSixty ? (["360"] as const) : []),
-    ...(product.supports3d && product.modelGlbUrl ? (["3d"] as const) : []),
-    ...(product.supportsAr && product.modelGlbUrl ? (["ar"] as const) : []),
-    ...(product.materialOptions && product.materialOptions.length > 0 && product.modelGlbUrl
+    ...(hasInteractive3D ? (["3d"] as const) : []),
+    ...(hasRealAr ? (["ar"] as const) : []),
+    ...(product.materialOptions && product.materialOptions.length > 0 && realModelUrl
       ? (["material"] as const)
       : []),
   ];
@@ -43,6 +56,7 @@ export function ProductViewer({ product }: { product: Product }) {
       setMode(availableModes[0]);
     }
     track("product_view", { productId: product.id, productName: product.name });
+    // availableModes is derived from this product's immutable viewer capability data.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
 
@@ -91,20 +105,28 @@ export function ProductViewer({ product }: { product: Product }) {
         <Product360Viewer frames={product.threeSixty.frames} alt={product.name} />
       )}
 
-      {(mode === "3d" || mode === "ar") && product.modelGlbUrl && (
+      {mode === "3d" && generatedModelKind && (
+        <ProductGenerated3DViewer
+          kind={generatedModelKind}
+          alt={product.name}
+          colors={generatedColors}
+        />
+      )}
+
+      {(mode === "3d" || mode === "ar") && !generatedModelKind && realModelUrl && (
         <Product3DViewer
-          modelUrl={product.modelGlbUrl}
+          modelUrl={realModelUrl}
           usdzUrl={product.modelUsdzUrl}
           alt={product.name}
           fallbackImageUrl={product.fallbackImageUrl}
           hotspots={product.hotspots}
-          supportsAr={product.supportsAr}
+          supportsAr={hasRealAr}
         />
       )}
 
-      {mode === "material" && product.modelGlbUrl && product.materialOptions && (
+      {mode === "material" && realModelUrl && product.materialOptions && (
         <Product3DMaterialViewer
-          modelUrl={product.modelGlbUrl}
+          modelUrl={realModelUrl}
           materialOptions={product.materialOptions}
           alt={product.name}
         />
