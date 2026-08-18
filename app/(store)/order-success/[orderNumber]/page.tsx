@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { getMockOrder } from "@/lib/services/orders";
@@ -16,16 +16,16 @@ function mapSupabaseOrder(row: Record<string, unknown>): Order {
     email: row.email as string,
     phone: row.phone as string,
     status: row.status as Order["status"],
-    items: items.map((i) => ({
-      productId: (i.product_id as string) ?? "",
-      variantId: (i.variant_id as string) ?? "",
-      productName: i.product_name as string,
-      sku: i.sku as string,
-      variantName: (i.variant_name as string) ?? "",
-      imageUrl: (i.image_url as string) ?? "",
-      unitPrice: Number(i.unit_price),
-      quantity: Number(i.quantity),
-      lineTotal: Number(i.line_total),
+    items: items.map((item) => ({
+      productId: (item.product_id as string) ?? "",
+      variantId: (item.variant_id as string) ?? "",
+      productName: item.product_name as string,
+      sku: item.sku as string,
+      variantName: (item.variant_name as string) ?? "",
+      imageUrl: (item.image_url as string) ?? "",
+      unitPrice: Number(item.unit_price),
+      quantity: Number(item.quantity),
+      lineTotal: Number(item.line_total),
     })),
     subtotal: Number(row.subtotal),
     discountAmount: Number(row.discount_amount),
@@ -41,21 +41,32 @@ function mapSupabaseOrder(row: Record<string, unknown>): Order {
   };
 }
 
-export default function OrderSuccessPage({ params }: { params: { orderNumber: string } }) {
+export default function OrderSuccessPage({ params }: { params: Promise<{ orderNumber: string }> }) {
+  const { orderNumber } = use(params);
   const [order, setOrder] = useState<Order | null | undefined>(undefined);
 
   useEffect(() => {
-    const mockOrder = getMockOrder(params.orderNumber);
+    const mockOrder = getMockOrder(orderNumber);
     if (mockOrder || USE_MOCK_DATA) {
       setOrder(mockOrder);
       return;
     }
-    // Supabase mode: mock storage won't have it — fetch from the API.
-    fetch(`/api/orders/${params.orderNumber}`)
-      .then((res) => res.json())
+
+    const controller = new AbortController();
+    fetch(`/api/orders/${encodeURIComponent(orderNumber)}`, {
+      signal: controller.signal,
+      credentials: "same-origin",
+      cache: "no-store",
+    })
+      .then((response) => response.json())
       .then((data) => setOrder(data.ok ? mapSupabaseOrder(data.order) : null))
-      .catch(() => setOrder(null));
-  }, [params.orderNumber]);
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setOrder(null);
+      });
+
+    return () => controller.abort();
+  }, [orderNumber]);
 
   if (order === undefined) {
     return <div className="mx-auto max-w-2xl px-4 py-16 text-center text-muted">กำลังโหลด...</div>;
@@ -64,7 +75,7 @@ export default function OrderSuccessPage({ params }: { params: { orderNumber: st
   if (!order) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <p className="text-muted">ไม่พบคำสั่งซื้อนี้</p>
+        <p className="text-muted">ไม่พบคำสั่งซื้อนี้ หรือสิทธิ์ดูคำสั่งซื้อหมดอายุแล้ว</p>
         <Link href="/products" className="focus-ring mt-4 inline-block text-primary">
           กลับไปเลือกซื้อสินค้า
         </Link>
@@ -89,16 +100,16 @@ export default function OrderSuccessPage({ params }: { params: { orderNumber: st
         <div className="mb-4 flex items-center justify-between">
           <span className="text-sm text-muted">สถานะ</span>
           <span className="rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">
-            {ORDER_STATUS_LABEL[order.status]}
+            {ORDER_STATUS_LABEL[order.status] ?? order.status}
           </span>
         </div>
         <ul className="mb-4 flex flex-col gap-2 divide-y divide-border">
-          {order.items.map((item) => (
-            <li key={item.variantId} className="flex justify-between py-2 text-sm">
+          {order.items.map((item, index) => (
+            <li key={`${item.variantId}-${index}`} className="flex justify-between gap-4 py-2 text-sm">
               <span className="text-muted">
                 {item.productName} x{item.quantity}
               </span>
-              <span className="font-medium">{formatCurrency(item.lineTotal)}</span>
+              <span className="shrink-0 font-medium">{formatCurrency(item.lineTotal)}</span>
             </li>
           ))}
         </ul>
@@ -111,7 +122,9 @@ export default function OrderSuccessPage({ params }: { params: { orderNumber: st
         <div className="mt-4 border-t border-border pt-3 text-sm text-muted">
           <p>วิธีชำระเงิน: {order.paymentMethod}</p>
           <p>
-            จัดส่งไปที่: {order.shippingAddress.recipientName}, {order.shippingAddress.addressLine1}, {order.shippingAddress.subdistrict} {order.shippingAddress.district} {order.shippingAddress.province} {order.shippingAddress.postalCode}
+            จัดส่งไปที่: {order.shippingAddress.recipientName}, {order.shippingAddress.addressLine1},{" "}
+            {order.shippingAddress.subdistrict} {order.shippingAddress.district} {order.shippingAddress.province}{" "}
+            {order.shippingAddress.postalCode}
           </p>
           <p>สั่งซื้อเมื่อ: {formatOrderDate(order.createdAt)}</p>
         </div>
@@ -138,8 +151,8 @@ export default function OrderSuccessPage({ params }: { params: { orderNumber: st
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
     <div className={`flex justify-between ${bold ? "text-base font-semibold text-foreground" : ""}`}>
-      <span className={bold ? "" : "text-muted"}>{label}</span>
-      <span>{value}</span>
+      <dt className={bold ? "" : "text-muted"}>{label}</dt>
+      <dd>{value}</dd>
     </div>
   );
 }

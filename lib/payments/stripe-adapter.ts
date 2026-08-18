@@ -1,12 +1,7 @@
 import Stripe from "stripe";
 import type { PaymentAdapter, CreatePaymentInput, CreatePaymentResult, VerifyWebhookInput, WebhookEvent } from "./types";
 
-/**
- * Real Stripe integration. Activated automatically once `STRIPE_SECRET_KEY`
- * is set (see `lib/payments/index.ts`). Uses Stripe Checkout Sessions so
- * card entry / 3D Secure happens on Stripe's hosted page — nothing sensitive
- * ever touches our server, satisfying PCI-DSS SAQ-A.
- */
+/** Stripe Checkout integration. Card entry and 3-D Secure stay on Stripe. */
 export class StripePaymentAdapter implements PaymentAdapter {
   readonly providerName = "stripe";
   private stripe: Stripe;
@@ -16,25 +11,40 @@ export class StripePaymentAdapter implements PaymentAdapter {
   }
 
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+    if (input.method === "bank_transfer") {
+      return {
+        ok: false,
+        message: "การโอนผ่านธนาคารยังไม่ได้ตั้งค่าสำหรับ Stripe กรุณาเลือกบัตรหรือ PromptPay",
+      };
+    }
+    if (input.method === "cod") {
+      return { ok: false, message: "เก็บเงินปลายทางไม่ต้องเรียก Payment Gateway" };
+    }
+
     try {
-      const session = await this.stripe.checkout.sessions.create({
-        mode: "payment",
-        payment_method_types: input.method === "promptpay" ? ["promptpay"] : ["card"],
-        customer_email: input.customerEmail,
-        line_items: [
-          {
-            price_data: {
-              currency: input.currency.toLowerCase(),
-              product_data: { name: `คำสั่งซื้อ ${input.orderNumber}` },
-              unit_amount: Math.round(input.amount * 100),
+      const metadata = { orderId: input.orderId, orderNumber: input.orderNumber };
+      const session = await this.stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          payment_method_types: input.method === "promptpay" ? ["promptpay"] : ["card"],
+          customer_email: input.customerEmail,
+          line_items: [
+            {
+              price_data: {
+                currency: input.currency.toLowerCase(),
+                product_data: { name: `คำสั่งซื้อ ${input.orderNumber}` },
+                unit_amount: Math.round(input.amount * 100),
+              },
+              quantity: 1,
             },
-            quantity: 1,
-          },
-        ],
-        metadata: { orderId: input.orderId, orderNumber: input.orderNumber },
-        success_url: `${input.returnUrl}?order=${input.orderNumber}`,
-        cancel_url: `${input.returnUrl}?cancelled=true`,
-      });
+          ],
+          metadata,
+          payment_intent_data: { metadata },
+          success_url: `${input.returnUrl}?payment=success`,
+          cancel_url: `${input.returnUrl}?payment=cancelled`,
+        },
+        { idempotencyKey: `spinshop-order-${input.orderId}` }
+      );
 
       return {
         ok: true,
@@ -42,10 +52,10 @@ export class StripePaymentAdapter implements PaymentAdapter {
         redirectUrl: session.url ?? undefined,
         providerTransactionId: session.id,
       };
-    } catch (err) {
+    } catch (error) {
       return {
         ok: false,
-        message: err instanceof Error ? err.message : "ไม่สามารถสร้างรายการชำระเงินได้",
+        message: error instanceof Error ? error.message : "ไม่สามารถสร้างรายการชำระเงินได้",
       };
     }
   }
@@ -64,19 +74,31 @@ export class StripePaymentAdapter implements PaymentAdapter {
           providerTransactionId: session.id,
           orderId: session.metadata?.orderId,
           amount: (session.amount_total ?? 0) / 100,
+          currency: session.currency?.toUpperCase(),
         };
       }
       if (event.type === "payment_intent.payment_failed") {
         const intent = event.data.object as Stripe.PaymentIntent;
-        return { type: "payment.failed", providerTransactionId: intent.id };
+        return {
+          type: "payment.failed",
+          providerTransactionId: intent.id,
+          orderId: intent.metadata?.orderId,
+          amount: intent.amount / 100,
+          currency: intent.currency.toUpperCase(),
+        };
       }
       if (event.type === "charge.refunded") {
         const charge = event.data.object as Stripe.Charge;
-        return { type: "payment.refunded", providerTransactionId: charge.id };
+        return {
+          type: "payment.refunded",
+          providerTransactionId: charge.id,
+          orderId: charge.metadata?.orderId,
+          amount: charge.amount_refunded / 100,
+          currency: charge.currency.toUpperCase(),
+        };
       }
       return null;
     } catch {
-      // Invalid signature — reject silently, caller responds 400.
       return null;
     }
   }

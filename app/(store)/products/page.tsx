@@ -13,41 +13,62 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  searchParams: Record<string, string | undefined>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 export default async function ProductsPage({ searchParams }: PageProps) {
-  const page = Number(searchParams.page ?? 1) || 1;
-  const { items, total, pageSize } = await getProducts({
-    category: searchParams.category,
-    brand: searchParams.brand,
-    minPrice: searchParams.minPrice ? Number(searchParams.minPrice) : undefined,
-    maxPrice: searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined,
-    supports3d: searchParams.supports3d === "true",
-    supports360: searchParams.supports360 === "true",
-    supportsAr: searchParams.supportsAr === "true",
-    onSale: searchParams.onSale === "true",
-    isNew: searchParams.isNew === "true",
-    isBestseller: searchParams.isBestseller === "true",
-    search: searchParams.search,
-    sort: (searchParams.sort as SortType) ?? "featured",
-    page,
-  });
-  const brands = await getAllBrands();
-  const view = searchParams.view === "list" ? "list" : "grid";
+  const resolved = await searchParams;
+  const category = first(resolved.category);
+  const brand = first(resolved.brand);
+  const minPrice = first(resolved.minPrice);
+  const maxPrice = first(resolved.maxPrice);
+  const supports3d = first(resolved.supports3d);
+  const supports360 = first(resolved.supports360);
+  const supportsAr = first(resolved.supportsAr);
+  const onSale = first(resolved.onSale);
+  const isNew = first(resolved.isNew);
+  const isBestseller = first(resolved.isBestseller);
+  const search = first(resolved.search);
+  const sort = first(resolved.sort);
+  const viewParam = first(resolved.view);
+  const page = Math.max(1, Number(first(resolved.page) ?? 1) || 1);
+
+  const [{ items, total, pageSize }, brands] = await Promise.all([
+    getProducts({
+      category,
+      brand,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      supports3d: supports3d === "true",
+      supports360: supports360 === "true",
+      supportsAr: supportsAr === "true",
+      onSale: onSale === "true",
+      isNew: isNew === "true",
+      isBestseller: isBestseller === "true",
+      search,
+      sort: (sort as SortType) ?? "featured",
+      page,
+    }),
+    getAllBrands(),
+  ]);
+  const view = viewParam === "list" ? "list" : "grid";
   const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="mb-1 text-2xl font-semibold text-foreground">
-        {searchParams.search ? `ผลการค้นหา "${searchParams.search}"` : "สินค้าทั้งหมด"}
+        {search ? `ผลการค้นหา "${search}"` : "สินค้าทั้งหมด"}
       </h1>
       <p className="mb-6 text-sm text-muted">เลือกซื้อสินค้าพร้อมระบบดูสินค้า 3D และ 360 องศา</p>
 
       <div className="flex flex-col gap-8 lg:flex-row">
         <ProductFilters brands={brands} />
 
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <ProductSort total={total} />
 
           {items.length === 0 ? (
@@ -65,8 +86,8 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                   : "flex flex-col gap-4"
               }
             >
-              {items.map((p) => (
-                <ProductCard key={p.id} product={p} view={view} />
+              {items.map((product) => (
+                <ProductCard key={product.id} product={product} view={view} />
               ))}
             </div>
           )}

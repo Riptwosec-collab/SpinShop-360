@@ -1,19 +1,5 @@
 import type { DetailedHTMLProps, HTMLAttributes } from "react";
 
-/**
- * Minimal, additive typing for Google's <model-viewer> web component so the
- * JSX compiler and TypeScript don't error out. Only the attributes SpinShop
- * 360 actually uses are declared; extend as needed.
- * Docs: https://modelviewer.dev/docs/
- */
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "model-viewer": ModelViewerJSX;
-    }
-  }
-}
-
 type ModelViewerJSX = DetailedHTMLProps<
   HTMLAttributes<HTMLElement> & {
     src?: string;
@@ -46,6 +32,15 @@ type ModelViewerJSX = DetailedHTMLProps<
   },
   HTMLElement
 >;
+
+/** React 19 exposes the JSX namespace through the React module. */
+declare module "react" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "model-viewer": ModelViewerJSX;
+    }
+  }
+}
 
 export interface ModelViewerElement extends HTMLElement {
   src: string;
