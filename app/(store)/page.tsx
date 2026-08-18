@@ -1,6 +1,7 @@
 import { HeroSection } from "@/components/home/hero-section";
 import { CategorySection } from "@/components/home/category-section";
 import { ProductRail } from "@/components/home/product-rail";
+import { PromoBanner } from "@/components/home/promo-banner";
 import { HighlightsSection } from "@/components/home/highlights-section";
 import { TestimonialsSection } from "@/components/home/testimonials-section";
 import {
@@ -11,21 +12,22 @@ import {
 
 export default async function HomePage() {
   const [featured, bestsellers, arProducts] = await Promise.all([
-    getFeaturedProducts(8),
-    getBestsellerProducts(8),
+    getFeaturedProducts(10),
+    getBestsellerProducts(10),
     getArProducts(6),
   ]);
 
   return (
     <>
-      <HeroSection />
+      <HeroSection product={featured[0]} />
       <CategorySection />
       <ProductRail
-        title="สินค้าแนะนำ"
-        subtitle="คัดสรรสินค้าคุณภาพพร้อมระบบดูสินค้า 3D และ 360 องศา"
+        title="สินค้าเด่นแบบ 360°"
+        subtitle="หมุนดูรายละเอียดสินค้าได้รอบด้านก่อนตัดสินใจซื้อ"
         products={featured}
         viewAllHref="/products?featured=true"
       />
+      <PromoBanner />
       <HighlightsSection />
       <ProductRail
         title="สินค้าขายดี"
