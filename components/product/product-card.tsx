@@ -10,6 +10,7 @@ import { RatingStars } from "./rating-stars";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useToastStore } from "@/lib/stores/toast-store";
+import { productCanUse3D, productCanUseAr } from "@/lib/product-3d-assets";
 import { cn } from "@/lib/utils";
 
 export function ProductCard({ product, view = "grid" }: { product: Product; view?: "grid" | "list" }) {
@@ -17,6 +18,8 @@ export function ProductCard({ product, view = "grid" }: { product: Product; view
   const toggleWishlist = useWishlistStore((state) => state.toggle);
   const addItem = useCartStore((state) => state.addItem);
   const pushToast = useToastStore((state) => state.push);
+  const canUse3D = productCanUse3D(product);
+  const canUseAr = productCanUseAr(product);
 
   function handleWishlist() {
     const nowInWishlist = toggleWishlist(product.id);
@@ -76,8 +79,8 @@ export function ProductCard({ product, view = "grid" }: { product: Product; view
 
         <div className="pointer-events-none absolute left-2 top-2 z-20 flex flex-wrap gap-1">
           {product.supports360 && <ProductBadge kind="360" />}
-          {product.supports3d && <ProductBadge kind="3d" />}
-          {product.supportsAr && <ProductBadge kind="ar" />}
+          {canUse3D && <ProductBadge kind="3d" />}
+          {canUseAr && <ProductBadge kind="ar" />}
         </div>
 
         <button
