@@ -82,16 +82,21 @@ export default async function ProductDetailPage({ params }: PageProps) {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-14">
-        <ProductViewer product={product} />
-        <ProductInfoPanel product={product} />
+      <section className="store-panel p-4 sm:p-6 lg:p-7">
+        <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1.08fr_0.92fr] lg:gap-10">
+          <ProductViewer product={product} />
+          <ProductInfoPanel product={product} />
+        </div>
+      </section>
+
+      <div className="mt-6 store-panel px-4 py-2 sm:px-6">
+        <ProductTabs product={product} reviews={reviews} />
       </div>
 
-      <ProductTabs product={product} reviews={reviews} />
       <RelatedProducts products={related} />
     </div>
   );
