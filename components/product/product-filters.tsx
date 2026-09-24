@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { CATEGORIES } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { Modal } from "@/components/shared/modal";
 
 interface ProductFiltersProps {
   brands: string[];
@@ -82,7 +82,7 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
       <FilterGroup title="ช่วงราคา">
         <div className="flex flex-col gap-1.5">
           {PRICE_RANGES.map((range) => {
-            const checked = activeMin === String(range.min) && activeMax === String(range.max ?? "");
+            const checked = activeMin === String(range.min) && (activeMax ?? "") === String(range.max ?? "");
             return (
               <FilterCheckbox
                 key={range.label}
@@ -90,8 +90,11 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
                 checked={checked}
                 onChange={() => {
                   if (checked) {
-                    updateParam("minPrice", null);
-                    updateParam("maxPrice", null);
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.delete("minPrice");
+                    params.delete("maxPrice");
+                    params.delete("page");
+                    router.push(`/products?${params.toString()}`);
                   } else {
                     const params = new URLSearchParams(searchParams.toString());
                     params.set("minPrice", String(range.min));
@@ -135,19 +138,9 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
         ตัวกรอง
       </button>
 
-      <aside className="hidden w-64 shrink-0 lg:block">{content}</aside>
+      <aside className="premium-panel hidden h-fit w-60 shrink-0 p-5 lg:sticky lg:top-36 lg:block">{content}</aside>
 
-      <div className={cn("fixed inset-0 z-50 lg:hidden", drawerOpen ? "pointer-events-auto" : "pointer-events-none")}>
-        <div
-          className={cn("absolute inset-0 bg-black/60 transition-opacity", drawerOpen ? "opacity-100" : "opacity-0")}
-          onClick={() => setDrawerOpen(false)}
-        />
-        <div
-          className={cn(
-            "absolute inset-x-0 bottom-0 max-h-[85vh] overflow-auto rounded-t-2xl border-t border-border bg-background p-5 transition-transform",
-            drawerOpen ? "translate-y-0" : "translate-y-full"
-          )}
-        >
+      <Modal open={drawerOpen} onClose={() => setDrawerOpen(false)} label="ตัวกรองสินค้า" className="mobile-safe mt-auto max-h-[85dvh] w-full rounded-t-3xl border-t p-5">
           <div className="mb-4 flex items-center justify-between">
             <span className="text-sm font-semibold">ตัวกรองสินค้า</span>
             <button onClick={() => setDrawerOpen(false)} aria-label="ปิด" className="focus-ring text-muted">
@@ -161,8 +154,7 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
           >
             แสดงผลลัพธ์
           </button>
-        </div>
-      </div>
+      </Modal>
     </>
   );
 }

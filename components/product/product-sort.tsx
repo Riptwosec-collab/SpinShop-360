@@ -23,6 +23,7 @@ export function ProductSort({ total }: { total: number }) {
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set(key, value);
+    if (key === "sort") params.delete("page");
     router.push(`/products?${params.toString()}`);
   }
 

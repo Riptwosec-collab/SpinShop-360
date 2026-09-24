@@ -266,3 +266,28 @@ npm run test:e2e
 - React Three Fiber / Three.js (สำหรับ Material Switching ขั้นสูง) ยังไม่ได้ติดตั้ง — ปัจจุบันใช้ `<model-viewer>` เป็นหลักตามสเปก และสลับ Variant ด้วยการเปลี่ยนไฟล์โมเดลแทนการเปลี่ยน Material แบบ Real-time
 - Multi-language (ภาษาอังกฤษ) ยังไม่ได้ทำ UI แปลจริง แต่โครงสร้าง `NEXT_PUBLIC_DEFAULT_LOCALE` เตรียมไว้สำหรับต่อยอดด้วย next-intl หรือไลบรารีแปลภาษาอื่น ๆ
 - Rate limiting, Audit log, และ Webhook signature verification ยังเป็นแนวทาง (Guideline) ในคอมเมนต์โค้ด ยังไม่ได้ implement เป็น Middleware จริงจนกว่าจะมี Backend Server Actions เชื่อม Supabase
+
+## Storefront experience upgrade (September 2026)
+
+- Restores the shared root layout, providers and theme tokens so store, account and admin routes use a consistent foundation.
+- Adds a navy/cyan storefront with a light theme, self-hosted Thai/Latin typography, visible focus states and reduced-motion support.
+- Simplifies navigation, adds mobile bottom navigation, and reserves safe-area space for mobile purchase controls.
+- Adds debounced, keyboard-accessible search suggestions with loading/error feedback; trims searches consistently.
+- Adds quick filter chips; fixes clearing both price bounds and invalid page numbers.
+- Makes product-card actions visible on touch devices, links configurable products directly to their details, and offers wishlist/compare controls without nesting buttons inside links.
+- Loads the homepage 3D sample only when requested; adds route loading skeletons, a retry state and a useful 404.
+- Keeps the review and confirm actions distinct so advancing checkout cannot implicitly submit an order.
+- Uses native dialogs for menu, filters and cart (focus containment, Escape and return focus). Build-plugin telemetry is disabled.
+
+Validation:
+
+```bash
+npm ci
+npm run lint
+npm test
+npm run build
+npx playwright install chromium
+PLAYWRIGHT_USE_BUILD=1 npm run test:e2e
+```
+
+The test runner also accepts `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` for an existing Chromium installation. The storefront continues to use the repository's existing mock-data/payment mode by default. This UI upgrade does not activate real payments or complete the existing Supabase product-service TODOs.

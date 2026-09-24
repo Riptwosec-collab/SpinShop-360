@@ -28,14 +28,16 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY) as Locale | null;
-    if (stored && stored in dictionaries) setLocaleState(stored);
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored === "th" || stored === "en") { setLocaleState(stored); document.documentElement.lang = stored; }
+    } catch { /* Storage is optional. */ }
     setMounted(true);
   }, []);
 
   function setLocale(next: Locale) {
     setLocaleState(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
+    try { window.localStorage.setItem(STORAGE_KEY, next); } catch { /* Storage is optional. */ }
     document.documentElement.lang = next;
   }
 

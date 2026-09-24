@@ -43,7 +43,7 @@ export async function getProducts(filters: ProductFilterState = {}): Promise<{
   if (filters.isNew) items = items.filter((p) => p.isNew);
   if (filters.isBestseller) items = items.filter((p) => p.isBestseller);
   if (filters.search) {
-    const q = filters.search.toLowerCase();
+    const q = filters.search.trim().toLowerCase();
     items = items.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
@@ -56,7 +56,7 @@ export async function getProducts(filters: ProductFilterState = {}): Promise<{
   items = sortProducts(items, filters.sort ?? "featured");
 
   const total = items.length;
-  const page = filters.page ?? 1;
+  const page = Number.isFinite(filters.page) ? Math.max(1, Math.floor(filters.page!)) : 1;
   const pageSize = PRODUCTS_PER_PAGE;
   const start = (page - 1) * pageSize;
   const paged = items.slice(start, start + pageSize);
@@ -131,7 +131,7 @@ export async function getProductReviews(productId: string) {
 export async function searchProducts(query: string, limit = 6): Promise<Product[]> {
   await delay();
   if (!query.trim()) return [];
-  const q = query.toLowerCase();
+  const q = query.trim().toLowerCase();
   return MOCK_PRODUCTS.filter(
     (p) =>
       p.status === "active" &&

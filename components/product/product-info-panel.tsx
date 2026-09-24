@@ -209,7 +209,7 @@ export function ProductInfoPanel({ product }: { product: Product }) {
       </div>
 
       {/* Mobile sticky bottom action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-border bg-background/95 p-3 backdrop-blur-glass sm:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-border bg-background/95 p-3 backdrop-blur-glass mobile-safe sm:hidden">
         <div className="flex-1">
           <p className="text-xs text-muted">ราคา</p>
           <p className="text-base font-semibold text-foreground">{formatCurrency(price)}</p>
@@ -229,7 +229,7 @@ export function ProductInfoPanel({ product }: { product: Product }) {
           ซื้อทันที
         </button>
       </div>
-      <div className="h-16 sm:hidden" aria-hidden />
+      <div className="h-24 sm:hidden" aria-hidden />
     </div>
   );
 }

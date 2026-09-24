@@ -227,7 +227,11 @@ export function CheckoutFlow() {
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      <form onSubmit={handleSubmit(onSubmit)} className="lg:col-span-2">
+      <form onSubmit={(event) => {
+        event.preventDefault();
+        if (step < STEPS.length - 1) { void goNext(); return; }
+        void handleSubmit(onSubmit)(event);
+      }} className="lg:col-span-2">
         <ol className="mb-8 flex items-center gap-2" aria-label="ขั้นตอนการชำระเงิน">
           {STEPS.map((label, i) => (
             <li key={label} className="flex items-center gap-2">
@@ -381,6 +385,7 @@ export function CheckoutFlow() {
           </button>
           {step < STEPS.length - 1 ? (
             <button
+              key="next-step"
               type="button"
               onClick={goNext}
               className="focus-ring rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-hover"
@@ -389,6 +394,7 @@ export function CheckoutFlow() {
             </button>
           ) : (
             <button
+              key="confirm-order"
               type="submit"
               disabled={submitting}
               className="focus-ring flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-60"

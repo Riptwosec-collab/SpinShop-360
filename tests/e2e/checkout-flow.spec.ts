@@ -43,7 +43,7 @@ test("ผู้ใช้สามารถเลือกซื้อสิน�
   // Step 2: shipping address
   await page.getByLabel("ชื่อผู้รับ").fill("ทดสอบ ระบบ");
   await page.getByLabel("เบอร์โทรศัพท์ผู้รับ").fill("0812345678");
-  await page.getByLabel("ที่อยู่").fill("123 ถนนทดสอบ");
+  await page.getByLabel("ที่อยู่", { exact: true }).fill("123 ถนนทดสอบ");
   await page.getByLabel("แขวง/ตำบล").fill("แขวงทดสอบ");
   await page.getByLabel("เขต/อำเภอ").fill("เขตทดสอบ");
   await page.getByLabel("จังหวัด").fill("กรุงเทพมหานคร");
@@ -53,7 +53,11 @@ test("ผู้ใช้สามารถเลือกซื้อสิน�
   // Step 3: shipping + payment method (defaults are fine — PromptPay/standard)
   await page.getByRole("button", { name: "ถัดไป" }).click();
 
-  // Step 4: review + confirm
+  // Step 4: advancing must never place the order automatically.
+  await expect(page).toHaveURL(/\/checkout$/);
+  await expect(page.getByRole("button", { name: "ยืนยันการสั่งซื้อ" })).toBeVisible();
+
+  // Review + explicit confirmation
   await page.getByRole("button", { name: "ยืนยันการสั่งซื้อ" }).click();
 
   await expect(page).toHaveURL(/\/order-success\/.+/, { timeout: 15_000 });
