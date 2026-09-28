@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import { RotateCw, ShieldCheck, Truck, RotateCcw } from "lucide-react";
 
 const HIGHLIGHTS = [
@@ -9,7 +11,7 @@ const HIGHLIGHTS = [
 
 export function HighlightsSection() {
   return (
-    <section className="border-y border-border bg-surface/40">
+    <Localized><section className="border-y border-border bg-surface/40">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
         {HIGHLIGHTS.map(({ icon: Icon, title, desc }) => (
           <div key={title} className="flex flex-col items-start gap-3">
@@ -21,6 +23,6 @@ export function HighlightsSection() {
           </div>
         ))}
       </div>
-    </section>
+    </section></Localized>
   );
 }

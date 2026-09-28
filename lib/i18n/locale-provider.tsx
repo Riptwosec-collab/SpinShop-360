@@ -13,29 +13,24 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 const STORAGE_KEY = "spinshop360-locale";
 
-/**
- * Lightweight client-side i18n: swaps a dictionary object rather than
- * routing through `/[locale]/...` segments. This keeps every existing route
- * working unchanged while still proving out real language switching for the
- * (currently Thai-only) UI strings that have been wired up so far.
- *
- * For a production rollout covering the entire UI, migrate to next-intl
- * with locale-prefixed routing — this provider's `Locale`/`dictionaries`
- * shape is intentionally compatible with that migration path.
+/** Shared locale for all client and server-rendered display boundaries.
+ * Preferences persist between visits; initial rendering remains hydration-safe.
  */
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY) as Locale | null;
-    if (stored && stored in dictionaries) setLocaleState(stored);
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored === "th" || stored === "en") { setLocaleState(stored); document.documentElement.lang = stored; }
+    } catch { /* Storage is optional. */ }
     setMounted(true);
   }, []);
 
   function setLocale(next: Locale) {
     setLocaleState(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
+    try { window.localStorage.setItem(STORAGE_KEY, next); } catch { /* Storage is optional. */ }
     document.documentElement.lang = next;
   }
 

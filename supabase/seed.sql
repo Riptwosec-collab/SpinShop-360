@@ -75,7 +75,7 @@ select
   brand.id, cat.id, 'active',
   3290, 'AUR-KB-075', 25, 8,
   true, true, true,
-  'https://modelviewer.dev/shared-assets/models/RobotExpressive.glb',
+  '/models/demo/keyboard.glb',
   'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=1200&q=80', now()
 from cat, brand;
 
@@ -103,7 +103,7 @@ select
   brand.id, cat.id, 'active',
   21990, 24990, 'HLO-X13-256', 18, 5,
   true, true, true, true,
-  'https://modelviewer.dev/shared-assets/models/NeilArmstrong.glb',
+  '/models/demo/phone.glb',
   'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=1200&q=80', now()
 from cat, brand;
 

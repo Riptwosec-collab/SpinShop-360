@@ -1,86 +1,29 @@
 "use client";
-
-import { useState } from "react";
-import { z } from "zod";
-import { useToastStore } from "@/lib/stores/toast-store";
-
-const schema = z.object({
-  name: z.string().min(1, "กรุณากรอกชื่อ"),
-  email: z.string().email("กรุณากรอกอีเมลให้ถูกต้อง"),
-  message: z.string().min(10, "กรุณากรอกข้อความอย่างน้อย 10 ตัวอักษร"),
-});
+import { useState } from 'react';
+import { useTranslation } from '@/lib/i18n/locale-provider';
+import { submissionMessage } from '@/lib/submission-messages';
 
 export function ContactForm() {
-  const [values, setValues] = useState({ name: "", email: "", message: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [sent, setSent] = useState(false);
-  const pushToast = useToastStore((s) => s.push);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const result = schema.safeParse(values);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
-        fieldErrors[issue.path[0] as string] = issue.message;
-      });
-      setErrors(fieldErrors);
-      return;
-    }
-    setErrors({});
-    setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setSubmitting(false);
-    setSent(true);
-    pushToast("ส่งข้อความสำเร็จ ทีมงานจะติดต่อกลับโดยเร็วที่สุด", "success");
+  const { locale } = useTranslation();
+  const en = locale === 'en';
+  const [values,setValues] = useState({ name:'',email:'',message:'' });
+  const [busy,setBusy] = useState(false);
+  const [result,setResult] = useState<string | null>(null);
+  async function submit(event: React.FormEvent) {
+    event.preventDefault(); if(busy) return; setBusy(true); setResult(null);
+    try {
+      const response = await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});
+      const data = await response.json();
+      setResult(response.ok && data.ok ? 'saved' : data.code || 'save_failed');
+      if(response.ok && data.ok) setValues({name:'',email:'',message:''});
+    } catch { setResult('save_failed'); } finally { setBusy(false); }
   }
-
-  if (sent) {
-    return (
-      <p className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
-        ขอบคุณสำหรับข้อความ ทีมงานจะติดต่อกลับภายใน 1-2 วันทำการ
-      </p>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-foreground">ชื่อ</span>
-        <input
-          value={values.name}
-          onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
-          className="input"
-        />
-        {errors.name && <span className="text-xs text-danger">{errors.name}</span>}
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-foreground">อีเมล</span>
-        <input
-          type="email"
-          value={values.email}
-          onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
-          className="input"
-        />
-        {errors.email && <span className="text-xs text-danger">{errors.email}</span>}
-      </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-foreground">ข้อความ</span>
-        <textarea
-          value={values.message}
-          onChange={(e) => setValues((v) => ({ ...v, message: e.target.value }))}
-          className="input min-h-28"
-        />
-        {errors.message && <span className="text-xs text-danger">{errors.message}</span>}
-      </label>
-      <button
-        type="submit"
-        disabled={submitting}
-        className="focus-ring self-start rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
-      >
-        {submitting ? "กำลังส่ง..." : "ส่งข้อความ"}
-      </button>
-    </form>
-  );
+  return <form onSubmit={submit} className="flex flex-col gap-4">
+    <label className="flex flex-col gap-1.5"><span>{en?'Name':'ชื่อ'}</span><input className="input" required maxLength={120} autoComplete="name" value={values.name} onChange={e=>setValues({...values,name:e.target.value})}/></label>
+    <label className="flex flex-col gap-1.5"><span>{en?'Email':'อีเมล'}</span><input className="input" type="email" required maxLength={254} autoComplete="email" value={values.email} onChange={e=>setValues({...values,email:e.target.value})}/></label>
+    <label className="flex flex-col gap-1.5"><span>{en?'Message':'ข้อความ'}</span><textarea className="input min-h-28" required minLength={10} maxLength={5000} value={values.message} onChange={e=>setValues({...values,message:e.target.value})}/></label>
+    <p className="text-xs text-muted">{en?'Your message will be saved for the store team. Do not include passwords or card details.':'ข้อความจะถูกบันทึกให้ทีมงานร้านค้า กรุณาไม่ส่งรหัสผ่านหรือข้อมูลบัตร'}</p>
+    {result && <p role={result==='saved'?'status':'alert'} className={result==='saved'?'text-success':'text-danger'}>{result==='saved'?(en?'Your message has been saved.':'บันทึกข้อความเรียบร้อยแล้ว'):submissionMessage(result,locale)}</p>}
+    <button className="primary-button self-start" disabled={busy} type="submit">{busy?(en?'Saving…':'กำลังบันทึก…'):(en?'Send message':'ส่งข้อความ')}</button>
+  </form>;
 }

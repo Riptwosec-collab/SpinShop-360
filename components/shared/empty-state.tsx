@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import { PackageSearch } from "lucide-react";
 import Link from "next/link";
 
@@ -13,7 +15,7 @@ export function EmptyState({
   actionLabel?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-20 text-center">
+    <Localized><div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-20 text-center">
       <PackageSearch className="h-10 w-10 text-muted" />
       <h3 className="text-base font-medium text-foreground">{title}</h3>
       <p className="max-w-xs text-sm text-muted">{description}</p>
@@ -25,6 +27,6 @@ export function EmptyState({
           {actionLabel}
         </Link>
       )}
-    </div>
+    </div></Localized>
   );
 }

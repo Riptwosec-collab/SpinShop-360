@@ -1,10 +1,12 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { InfoPageLayout, InfoSection } from "@/components/shared/info-page-layout";
 
 export const metadata: Metadata = { title: "วิธีสั่งซื้อ" };
 
 const STEPS = [
-  { title: "1. เลือกสินค้า", desc: "เลือกดูสินค้าที่หน้ารวมสินค้า หรือค้นหาชื่อสินค้าที่ต้องการโดยตรง ใช้ระบบดูสินค้า 3D/360°/AR เพื่อสำรวจรายละเอียดก่อนตัดสินใจ" },
+  { title: "1. เลือกสินค้า", desc: "เลือกดูสินค้าที่หน้ารวมสินค้า หรือค้นหาชื่อสินค้าที่ต้องการโดยตรง ใช้ระบบดูสินค้า 3D/360° เพื่อสำรวจรายละเอียดก่อนตัดสินใจ" },
   { title: "2. เลือกตัวเลือกสินค้า", desc: "หากสินค้ามีตัวเลือก เช่น สี ขนาด หรือความจุ ให้เลือกให้ครบก่อนกดเพิ่มลงตะกร้า ระบบจะแสดงราคาและสต็อกที่อัปเดตตามตัวเลือกที่เลือก" },
   { title: "3. เพิ่มลงตะกร้าหรือซื้อทันที", desc: "กด \"เพิ่มลงตะกร้า\" เพื่อเลือกซื้อสินค้าอื่นต่อ หรือกด \"ซื้อทันที\" เพื่อไปหน้าชำระเงินโดยตรง" },
   { title: "4. กรอกข้อมูลจัดส่งและชำระเงิน", desc: "กรอกข้อมูลผู้รับ ที่อยู่จัดส่ง เลือกวิธีจัดส่งและวิธีชำระเงินที่สะดวก ตรวจสอบรายการสั่งซื้อให้ถูกต้องก่อนกดยืนยัน" },
@@ -13,7 +15,7 @@ const STEPS = [
 
 export default function HowToOrderPage() {
   return (
-    <InfoPageLayout title="วิธีสั่งซื้อสินค้า" subtitle="ขั้นตอนการสั่งซื้อบน SpinShop 360 ใช้เวลาไม่ถึง 5 นาที">
+    <Localized><InfoPageLayout title="วิธีสั่งซื้อสินค้า" subtitle="ขั้นตอนการสั่งซื้อบน SpinShop 360 ใช้เวลาไม่ถึง 5 นาที">
       <InfoSection heading="ขั้นตอนการสั่งซื้อ">
         <ol className="flex flex-col gap-4">
           {STEPS.map((step) => (
@@ -31,6 +33,6 @@ export default function HowToOrderPage() {
           บันทึกที่อยู่จัดส่ง และรับสิทธิพิเศษต่าง ๆ ได้สะดวกยิ่งขึ้น
         </p>
       </InfoSection>
-    </InfoPageLayout>
+    </InfoPageLayout></Localized>
   );
 }

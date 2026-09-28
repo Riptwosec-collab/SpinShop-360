@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Localized } from "@/lib/i18n/localized";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useToastStore } from "@/lib/stores/toast-store";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { MOCK_ADMIN_ACCOUNT, MOCK_CUSTOMER_ACCOUNT, USE_MOCK_DATA } from "@/lib/constants";
 
 export default function LoginPage() {
@@ -17,44 +18,25 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => { if(new URLSearchParams(window.location.search).get("error")==="auth-link") setError("ลิงก์ยืนยันหมดอายุหรือไม่ถูกต้อง กรุณาขอลิงก์ใหม่ / This link is invalid or expired; request a new link"); }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("กรุณากรอกอีเมลให้ถูกต้อง"); return; }
+    if (!password) { setError("กรุณากรอกรหัสผ่าน"); return; }
     setSubmitting(true);
 
-    if (USE_MOCK_DATA) {
-      const result = login(email, password);
-      setSubmitting(false);
-      if (result.ok) {
-        pushToast(result.message, "success");
-        router.push("/account");
-      } else {
-        setError(result.message);
-      }
-      return;
-    }
-
-    const supabase = createSupabaseBrowserClient();
-    if (!supabase) {
-      setSubmitting(false);
-      setError("ไม่สามารถเชื่อมต่อระบบยืนยันตัวตนได้ กรุณาตรวจสอบการตั้งค่า Supabase");
-      return;
-    }
-
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    setError(null);
+    const result = await login(email, password);
     setSubmitting(false);
-
-    if (authError) {
-      setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
-      return;
-    }
-
-    pushToast("เข้าสู่ระบบสำเร็จ", "success");
-    router.push("/account");
+    if (!result.ok) { setError(result.message); return; }
+    pushToast(result.message, "success");
+    router.push(result.needsConfirmation ? "/login" : "/account");
     router.refresh();
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
+    <Localized><div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
       <h1 className="mb-1 text-2xl font-semibold text-foreground">เข้าสู่ระบบ</h1>
       <p className="mb-6 text-sm text-muted">เข้าสู่ระบบเพื่อดูประวัติคำสั่งซื้อและรายการโปรด</p>
 
@@ -89,6 +71,8 @@ export default function LoginPage() {
         </button>
       </form>
 
+      <Link href="/forgot-password" className="mt-4 text-sm text-primary">ลืมรหัสผ่าน?</Link>
+
       {USE_MOCK_DATA && (
         <div className="mt-4 rounded-lg border border-border bg-surface p-3 text-xs text-muted">
           <p className="mb-1 font-medium text-foreground">บัญชีทดสอบ (Mock Mode)</p>
@@ -103,6 +87,6 @@ export default function LoginPage() {
           สมัครสมาชิก
         </Link>
       </p>
-    </div>
+    </div></Localized>
   );
 }

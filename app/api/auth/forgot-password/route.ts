@@ -1,46 +1,73 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getActiveEmailAdapter, passwordResetEmail } from "@/lib/email";
+import { authOrigin } from "@/lib/supabase/redirect";
+import { USE_MOCK_DATA } from "@/lib/constants";
 import { rateLimit } from "@/lib/rate-limit";
-
-const bodySchema = z.object({ email: z.string().email() });
-
+const schema = z.object({ email: z.string().email() });
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const { success } = rateLimit(`forgot-password:${ip}`, 3, 60_000);
-  if (!success) {
-    return NextResponse.json({ ok: false, message: "ลองใหม่บ่อยเกินไป กรุณารอสักครู่" }, { status: 429 });
-  }
-
-  const json = await request.json().catch(() => null);
-  const parsed = bodySchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json({ ok: false, message: "อีเมลไม่ถูกต้อง" }, { status: 400 });
-  }
-
-  const supabase = createSupabaseServerClient();
-
-  if (supabase) {
-    // Supabase sends its own branded reset email via its configured SMTP
-    // provider — no need to call our custom adapter in this path.
-    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-      redirectTo: `${request.nextUrl.origin}/reset-password`,
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (!rateLimit(`forgot-password:${ip}`, 3, 60_000).success)
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "ลองใหม่บ่อยเกินไป กรุณารอสักครู่ / Too many attempts; try again shortly",
+      },
+      { status: 429 },
+    );
+  const parsed = schema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success)
+    return NextResponse.json(
+      { ok: false, message: "อีเมลไม่ถูกต้อง / Invalid email address" },
+      { status: 400 },
+    );
+  if (USE_MOCK_DATA)
+    return NextResponse.json({
+      ok: true,
+      mock: true,
+      message:
+        "จำลองการส่งลิงก์แล้ว ไม่มีการส่งอีเมลจริง / Demo only; no email was sent",
     });
-    if (error) {
-      // Don't leak whether the email exists — respond success either way.
-      // eslint-disable-next-line no-console
-      console.error("[forgot-password]", error.message);
-    }
-  } else {
-    // Mock Mode: send via our own adapter so the flow is still demonstrable.
-    await getActiveEmailAdapter().send({
-      to: parsed.data.email,
-      subject: "รีเซ็ตรหัสผ่าน — SpinShop 360",
-      html: passwordResetEmail(`${request.nextUrl.origin}/reset-password?email=${encodeURIComponent(parsed.data.email)}`),
+  try {
+    const client = createSupabaseServerClient();
+    if (!client)
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "ระบบยืนยันตัวตนยังไม่พร้อม / Authentication is not configured",
+        },
+        { status: 503 },
+      );
+    const origin = authOrigin(request.nextUrl.origin);
+    const { error } = await client.auth.resetPasswordForEmail(
+      parsed.data.email,
+      { redirectTo: `${origin}/api/auth/callback?next=/reset-password` },
+    );
+    if (error)
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "ไม่สามารถส่งคำขอได้ กรุณาลองใหม่ / Unable to submit reset request; try again",
+        },
+        { status: 503 },
+      );
+    return NextResponse.json({
+      ok: true,
+      message:
+        "หากมีบัญชีนี้ ระบบจะส่งลิงก์รีเซ็ตรหัสผ่าน / If an account exists, a reset link will be sent",
     });
+  } catch {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "ไม่สามารถส่งคำขอได้ กรุณาลองใหม่ / Unable to submit reset request; try again",
+      },
+      { status: 503 },
+    );
   }
-
-  // Always return success — never reveal whether an email is registered.
-  return NextResponse.json({ ok: true, message: "หากอีเมลนี้มีอยู่ในระบบ เราได้ส่งลิงก์รีเซ็ตรหัสผ่านไปแล้ว" });
 }

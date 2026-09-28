@@ -1,5 +1,8 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
-import { getProducts, getAllBrands } from "@/lib/services/products";
+import { getProducts, getAllBrands, getCategories } from "@/lib/services/products";
+import { QuickFilters } from "@/components/product/quick-filters";
 import { ProductFilters } from "@/components/product/product-filters";
 import { ProductSort } from "@/components/product/product-sort";
 import { ProductCard } from "@/components/product/product-card";
@@ -17,7 +20,8 @@ interface PageProps {
 }
 
 export default async function ProductsPage({ searchParams }: PageProps) {
-  const page = Number(searchParams.page ?? 1) || 1;
+  const requestedPage = Number(searchParams.page ?? 1);
+  const page = Number.isFinite(requestedPage) ? Math.max(1, Math.floor(requestedPage)) : 1;
   const { items, total, pageSize } = await getProducts({
     category: searchParams.category,
     brand: searchParams.brand,
@@ -25,7 +29,6 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     maxPrice: searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined,
     supports3d: searchParams.supports3d === "true",
     supports360: searchParams.supports360 === "true",
-    supportsAr: searchParams.supportsAr === "true",
     onSale: searchParams.onSale === "true",
     isNew: searchParams.isNew === "true",
     isBestseller: searchParams.isBestseller === "true",
@@ -33,21 +36,23 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     sort: (searchParams.sort as SortType) ?? "featured",
     page,
   });
-  const brands = await getAllBrands();
+  const [brands,categories] = await Promise.all([getAllBrands(),getCategories()]);
   const view = searchParams.view === "list" ? "list" : "grid";
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <Localized><div className="page-enter mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <p className="mb-3 text-[10px] font-medium tracking-[.25em] text-accent">THE COLLECTION / SPINSHOP 360</p>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">
         {searchParams.search ? `ผลการค้นหา "${searchParams.search}"` : "สินค้าทั้งหมด"}
       </h1>
       <p className="mb-6 text-sm text-muted">เลือกซื้อสินค้าพร้อมระบบดูสินค้า 3D และ 360 องศา</p>
 
-      <div className="flex flex-col gap-8 lg:flex-row">
-        <ProductFilters brands={brands} />
+      <QuickFilters />
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <ProductFilters brands={brands} categories={categories} />
 
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <ProductSort total={total} />
 
           {items.length === 0 ? (
@@ -74,6 +79,6 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           <Pagination page={page} totalPages={totalPages} />
         </div>
       </div>
-    </div>
+    </div></Localized>
   );
 }

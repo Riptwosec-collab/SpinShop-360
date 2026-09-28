@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useToastStore } from "@/lib/stores/toast-store";
 import { APP_NAME } from "@/lib/constants";
 
@@ -7,7 +10,7 @@ export default function AdminSettingsPage() {
   const pushToast = useToastStore((s) => s.push);
 
   return (
-    <div>
+    <Localized><div>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">ตั้งค่าร้านค้า</h1>
       <p className="mb-6 text-sm text-muted">ตั้งค่าทั่วไปของร้าน (โหมดทดสอบ — การเปลี่ยนแปลงจะไม่ถูกบันทึกถาวร)</p>
 
@@ -37,6 +40,6 @@ export default function AdminSettingsPage() {
           บันทึกการตั้งค่า
         </button>
       </form>
-    </div>
+    </div></Localized>
   );
 }

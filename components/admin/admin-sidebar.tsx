@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -32,7 +35,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-border bg-surface/50 lg:block">
+    <Localized><aside className="hidden w-60 shrink-0 border-r border-border bg-surface/50 lg:block">
       <div className="flex h-16 items-center gap-2 border-b border-border px-5">
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
           <Rotate3d className="h-4 w-4 text-white" />
@@ -57,6 +60,6 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-    </aside>
+    </aside></Localized>
   );
 }

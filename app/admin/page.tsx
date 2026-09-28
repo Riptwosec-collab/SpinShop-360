@@ -1,4 +1,6 @@
-import { TrendingUp, ShoppingBag, Users, AlertTriangle, Box, Smartphone } from "lucide-react";
+
+import { Localized } from "@/lib/i18n/localized";
+import { TrendingUp, ShoppingBag, Users, AlertTriangle, Box } from "lucide-react";
 import { MOCK_PRODUCTS } from "@/lib/mock-data/products";
 import { formatCurrency } from "@/lib/utils";
 import { RealtimeAdminFeed } from "@/components/admin/realtime-stock-feed";
@@ -17,11 +19,10 @@ export default function AdminDashboardPage() {
 
   const engagement = [
     { label: "เปิดดูโมเดล 3D", value: "1,842 ครั้ง", icon: Box },
-    { label: "เปิดใช้งาน AR", value: "356 ครั้ง", icon: Smartphone },
   ];
 
   return (
-    <div>
+    <Localized><div>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">ภาพรวมร้านค้า</h1>
       <p className="mb-6 text-sm text-muted">สรุปข้อมูลสำคัญของ SpinShop 360 (ข้อมูลตัวอย่างในโหมด Mock)</p>
 
@@ -88,6 +89,6 @@ export default function AdminDashboardPage() {
           </ul>
         )}
       </div>
-    </div>
+    </div></Localized>
   );
 }

@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { InfoPageLayout, InfoSection } from "@/components/shared/info-page-layout";
@@ -7,7 +9,7 @@ export const metadata: Metadata = { title: "ติดต่อเรา" };
 
 export default function ContactPage() {
   return (
-    <InfoPageLayout title="ติดต่อเรา" subtitle="ทีมงานพร้อมช่วยเหลือคุณทุกวัน">
+    <Localized><InfoPageLayout title="ติดต่อเรา" subtitle="ทีมงานพร้อมช่วยเหลือคุณทุกวัน">
       <InfoSection heading="ช่องทางการติดต่อ">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ContactItem icon={Mail} label="อีเมล" value="support@spinshop360.local" />
@@ -20,7 +22,7 @@ export default function ContactPage() {
       <InfoSection heading="ส่งข้อความถึงเรา">
         <ContactForm />
       </InfoSection>
-    </InfoPageLayout>
+    </InfoPageLayout></Localized>
   );
 }
 
@@ -34,12 +36,12 @@ function ContactItem({
   value: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-border bg-surface p-4">
+    <Localized><div className="flex items-start gap-3 rounded-xl border border-border bg-surface p-4">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
       <div>
         <p className="text-xs text-muted">{label}</p>
         <p className="text-sm font-medium text-foreground">{value}</p>
       </div>
-    </div>
+    </div></Localized>
   );
 }

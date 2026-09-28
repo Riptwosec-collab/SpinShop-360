@@ -1,12 +1,15 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
 import Image from "next/image";
 import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { formatCurrency } from "@/lib/utils";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { Modal } from "@/components/shared/modal";
 
 export function CartDrawer() {
   const isOpen = useCartStore((s) => s.isDrawerOpen);
@@ -20,19 +23,7 @@ export function CartDrawer() {
   const progress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
 
   return (
-    <div className={cn("fixed inset-0 z-[60]", isOpen ? "pointer-events-auto" : "pointer-events-none")}>
-      <div
-        className={cn("absolute inset-0 bg-black/60 transition-opacity", isOpen ? "opacity-100" : "opacity-0")}
-        onClick={close}
-      />
-      <div
-        className={cn(
-          "absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-background transition-transform",
-          isOpen ? "translate-x-0" : "translate-x-full"
-        )}
-        role="dialog"
-        aria-label="ตะกร้าสินค้า"
-      >
+    <Localized><Modal open={isOpen} onClose={close} label="ตะกร้าสินค้า" className="ml-auto h-full w-full max-w-md border-l mobile-safe">
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="text-base font-semibold">ตะกร้าสินค้า ({items.length})</h2>
           <button onClick={close} className="focus-ring rounded-lg p-2 text-muted hover:text-foreground" aria-label="ปิดตะกร้า">
@@ -131,7 +122,6 @@ export function CartDrawer() {
             </div>
           </>
         )}
-      </div>
-    </div>
+    </Modal></Localized>
   );
 }

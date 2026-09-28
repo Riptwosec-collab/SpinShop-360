@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 const COUPONS = [
   { code: "SPIN10", type: "เปอร์เซ็นต์", value: "10%", minOrder: "500 บาท", status: "ใช้งานอยู่" },
   { code: "SAVE100", type: "จำนวนเงิน", value: "100 บาท", minOrder: "1,000 บาท", status: "ใช้งานอยู่" },
@@ -6,7 +8,7 @@ const COUPONS = [
 
 export default function AdminCouponsPage() {
   return (
-    <div>
+    <Localized><div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">คูปองส่วนลด</h1>
@@ -42,6 +44,6 @@ export default function AdminCouponsPage() {
           </tbody>
         </table>
       </div>
-    </div>
+    </div></Localized>
   );
 }

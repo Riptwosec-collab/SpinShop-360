@@ -1,29 +1,12 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-/**
- * GET /api/orders/[orderNumber]
- * Used by the order-success and account pages in Supabase mode. RLS
- * (`orders_owner_or_staff_read`) ensures a signed-in user can only fetch
- * their own orders even if they guess another order number; guest orders
- * (no user_id) are matched by order_number + email verification would be
- * added here for a guest-checkout confirmation flow.
- */
-export async function GET(_request: Request, { params }: { params: { orderNumber: string } }) {
-  const supabase = createSupabaseServerClient();
-  if (!supabase) {
-    return NextResponse.json({ ok: false, message: "Supabase not configured" }, { status: 501 });
-  }
-
-  const { data: order, error } = await supabase
-    .from("orders")
-    .select("*, order_items(*)")
-    .eq("order_number", params.orderNumber)
-    .maybeSingle();
-
-  if (error || !order) {
-    return NextResponse.json({ ok: false, message: "ไม่พบคำสั่งซื้อนี้" }, { status: 404 });
-  }
-
-  return NextResponse.json({ ok: true, order });
+import type { NextRequest } from 'next/server';
+import { authorizeOrder, paymentDatabase, paymentResponse } from '@/lib/payments/server';
+import { ORDER_CUSTOMER_SELECT } from '@/lib/order-projection';
+export const dynamic = 'force-dynamic';
+export async function GET(request: NextRequest, { params }: { params: { orderNumber: string } }) {
+  const db = paymentDatabase();
+  if (!db) return paymentResponse({ok:false,code:'unavailable'},503);
+  const {data:order,error} = await db.from('orders').select(ORDER_CUSTOMER_SELECT).eq('order_number',params.orderNumber).maybeSingle();
+  if(error) return paymentResponse({ok:false,code:'load_failed'},503);
+  if(!order || !await authorizeOrder(request,{id:order.id,user_id:order.user_id},db)) return paymentResponse({ok:false,code:'not_found'},404);
+  return paymentResponse({ok:true,order});
 }

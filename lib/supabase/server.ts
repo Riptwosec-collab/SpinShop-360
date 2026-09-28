@@ -1,6 +1,8 @@
+import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { getSupabaseConfig } from "./config";
 import type { Database } from "@/types/database";
 
 /**
@@ -9,30 +11,23 @@ import type { Database } from "@/types/database";
  * `null` when Supabase env vars aren't set (Mock Mode).
  */
 export function createSupabaseServerClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return null;
+  const config = getSupabaseConfig();
+  if (!config) return null;
 
   const cookieStore = cookies();
 
-  return createServerClient<Database>(url, anonKey, {
+  return createServerClient<Database>(config.url, config.key, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+      getAll() {
+        return cookieStore.getAll();
       },
-      set(name: string, value: string, options: Record<string, unknown>) {
+      setAll(cookiesToSet) {
         try {
-          cookieStore.set({ name, value, ...options });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options),
+          );
         } catch {
-          // Called from a Server Component render — middleware handles
-          // refreshing the session cookie instead. Safe to ignore.
-        }
-      },
-      remove(name: string, options: Record<string, unknown>) {
-        try {
-          cookieStore.set({ name, value: "", ...options });
-        } catch {
-          // See note above.
+          /* Server Components cannot write cookies; middleware refreshes them. */
         }
       },
     },

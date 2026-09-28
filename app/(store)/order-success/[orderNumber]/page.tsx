@@ -1,145 +1,32 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
-import { getMockOrder } from "@/lib/services/orders";
-import type { Order } from "@/types/order";
-import { formatCurrency, formatOrderDate } from "@/lib/utils";
-import { ORDER_STATUS_LABEL, USE_MOCK_DATA } from "@/lib/constants";
-
-function mapSupabaseOrder(row: Record<string, unknown>): Order {
-  const items = (row.order_items as Record<string, unknown>[] | undefined) ?? [];
-  return {
-    id: row.id as string,
-    orderNumber: row.order_number as string,
-    email: row.email as string,
-    phone: row.phone as string,
-    status: row.status as Order["status"],
-    items: items.map((i) => ({
-      productId: (i.product_id as string) ?? "",
-      variantId: (i.variant_id as string) ?? "",
-      productName: i.product_name as string,
-      sku: i.sku as string,
-      variantName: (i.variant_name as string) ?? "",
-      imageUrl: (i.image_url as string) ?? "",
-      unitPrice: Number(i.unit_price),
-      quantity: Number(i.quantity),
-      lineTotal: Number(i.line_total),
-    })),
-    subtotal: Number(row.subtotal),
-    discountAmount: Number(row.discount_amount),
-    shippingFee: Number(row.shipping_fee),
-    taxAmount: Number(row.tax_amount ?? 0),
-    grandTotal: Number(row.grand_total),
-    couponCode: row.coupon_code as string | null,
-    shippingAddress: row.shipping_address as Order["shippingAddress"],
-    paymentMethod: row.payment_method as Order["paymentMethod"],
-    shippingMethod: row.shipping_method as string,
-    customerNote: row.customer_note as string | undefined,
-    createdAt: row.created_at as string,
-  };
-}
-
-export default function OrderSuccessPage({ params }: { params: { orderNumber: string } }) {
-  const [order, setOrder] = useState<Order | null | undefined>(undefined);
-
-  useEffect(() => {
-    const mockOrder = getMockOrder(params.orderNumber);
-    if (mockOrder || USE_MOCK_DATA) {
-      setOrder(mockOrder);
-      return;
-    }
-    // Supabase mode: mock storage won't have it — fetch from the API.
-    fetch(`/api/orders/${params.orderNumber}`)
-      .then((res) => res.json())
-      .then((data) => setOrder(data.ok ? mapSupabaseOrder(data.order) : null))
-      .catch(() => setOrder(null));
-  }, [params.orderNumber]);
-
-  if (order === undefined) {
-    return <div className="mx-auto max-w-2xl px-4 py-16 text-center text-muted">กำลังโหลด...</div>;
-  }
-
-  if (!order) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <p className="text-muted">ไม่พบคำสั่งซื้อนี้</p>
-        <Link href="/products" className="focus-ring mt-4 inline-block text-primary">
-          กลับไปเลือกซื้อสินค้า
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <div className="flex flex-col items-center text-center">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success">
-          <CheckCircle2 className="h-9 w-9" />
-        </span>
-        <h1 className="mt-4 text-2xl font-semibold text-foreground">สั่งซื้อสำเร็จ!</h1>
-        <p className="mt-1 text-sm text-muted">ขอบคุณสำหรับการสั่งซื้อ เราจะจัดส่งสินค้าให้เร็วที่สุด</p>
-        <p className="mt-3 rounded-lg bg-surface px-4 py-2 text-sm font-medium text-foreground">
-          เลขที่คำสั่งซื้อ: {order.orderNumber}
-        </p>
-      </div>
-
-      <div className="mt-8 rounded-2xl border border-border bg-surface p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-sm text-muted">สถานะ</span>
-          <span className="rounded-full bg-primary/15 px-2.5 py-1 text-xs font-medium text-primary">
-            {ORDER_STATUS_LABEL[order.status]}
-          </span>
-        </div>
-        <ul className="mb-4 flex flex-col gap-2 divide-y divide-border">
-          {order.items.map((item) => (
-            <li key={item.variantId} className="flex justify-between py-2 text-sm">
-              <span className="text-muted">
-                {item.productName} x{item.quantity}
-              </span>
-              <span className="font-medium">{formatCurrency(item.lineTotal)}</span>
-            </li>
-          ))}
-        </ul>
-        <dl className="flex flex-col gap-1.5 border-t border-border pt-3 text-sm">
-          <Row label="ยอดรวมสินค้า" value={formatCurrency(order.subtotal)} />
-          <Row label="ค่าจัดส่ง" value={order.shippingFee === 0 ? "ฟรี" : formatCurrency(order.shippingFee)} />
-          {order.discountAmount > 0 && <Row label="ส่วนลด" value={`-${formatCurrency(order.discountAmount)}`} />}
-          <Row label="ยอดชำระทั้งหมด" value={formatCurrency(order.grandTotal)} bold />
-        </dl>
-        <div className="mt-4 border-t border-border pt-3 text-sm text-muted">
-          <p>วิธีชำระเงิน: {order.paymentMethod}</p>
-          <p>
-            จัดส่งไปที่: {order.shippingAddress.recipientName}, {order.shippingAddress.addressLine1}, {order.shippingAddress.subdistrict} {order.shippingAddress.district} {order.shippingAddress.province} {order.shippingAddress.postalCode}
-          </p>
-          <p>สั่งซื้อเมื่อ: {formatOrderDate(order.createdAt)}</p>
-        </div>
-      </div>
-
-      <div className="mt-6 flex gap-3">
-        <Link
-          href="/account"
-          className="focus-ring flex-1 rounded-xl border border-border py-3 text-center text-sm font-medium text-foreground hover:border-primary/40"
-        >
-          ดูคำสั่งซื้อของฉัน
-        </Link>
-        <Link
-          href="/products"
-          className="focus-ring flex-1 rounded-xl bg-primary py-3 text-center text-sm font-medium text-white hover:bg-primary-hover"
-        >
-          เลือกซื้อสินค้าต่อ
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
-  return (
-    <div className={`flex justify-between ${bold ? "text-base font-semibold text-foreground" : ""}`}>
-      <span className={bold ? "" : "text-muted"}>{label}</span>
-      <span>{value}</span>
-    </div>
-  );
+import { useEffect,useState } from 'react';
+import Link from 'next/link';
+import { getMockOrder } from '@/lib/services/orders';
+import { clearCheckoutSession } from "@/lib/services/checkout-session";
+import { mapOrder } from '@/lib/services/order-display';
+import { OrderTimeline,ReorderButton } from '@/components/orders/order-timeline';
+import { USE_MOCK_DATA,ORDER_STATUS_LABEL } from '@/lib/constants';
+import { useTranslation } from '@/lib/i18n/locale-provider';
+import { translateText } from '@/lib/i18n/translate';
+import type { Order } from '@/types/order';
+import { formatCurrency } from '@/lib/utils';
+export default function OrderSuccessPage({params}:{params:{orderNumber:string}}){
+ const {locale}=useTranslation();const en=locale==='en';const [order,setOrder]=useState<Order|null|undefined>();const [failed,setFailed]=useState(false);const [revision,setRevision]=useState(0);
+ useEffect(()=>{let live=true;setFailed(false);setOrder(undefined);
+  if(USE_MOCK_DATA){try{setOrder(getMockOrder(params.orderNumber));}catch{setOrder(null);}return;}
+  fetch(`/api/orders/${encodeURIComponent(params.orderNumber)}`,{cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok||!data.ok)throw Error();if(live){const mapped=mapOrder(data.order);setOrder(mapped);if(mapped.paymentStatus==='paid'||mapped.paymentMethod==='cod'||['cancelled','refunded','delivered','completed'].includes(mapped.status))clearCheckoutSession(mapped.orderNumber);}}).catch(()=>{if(live){setOrder(null);setFailed(true);}});return()=>{live=false;};
+ },[params.orderNumber,revision]);
+ if(order===undefined)return <p role="status" className="p-12 text-center">{en?'Loading order…':'กำลังโหลดคำสั่งซื้อ…'}</p>;
+ if(!order)return <div className="p-12 text-center"><p>{en?'Order unavailable. Sign in with the account that placed it, or open this page in the browser used at checkout.':'ไม่พบคำสั่งซื้อ กรุณาเข้าสู่ระบบด้วยบัญชีที่สั่งซื้อ หรือเปิดจากเบราว์เซอร์ที่ใช้สั่งซื้อ'}</p>{failed&&<button onClick={()=>setRevision(n=>n+1)} className="primary-button mt-4">{en?'Retry':'ลองใหม่'}</button>}<Link href="/login" className="ml-4 text-primary">{en?'Sign in':'เข้าสู่ระบบ'}</Link></div>;
+ const paid=order.paymentStatus==='paid'||['paid','processing','packed','shipped','delivered','completed'].includes(order.status)&&order.paymentMethod!=='cod';
+ return <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+  <div className="text-center"><h1 className="text-2xl font-semibold">{USE_MOCK_DATA?(en?'Order placed!':'สั่งซื้อสำเร็จ!'):(en?'Your order':'คำสั่งซื้อของคุณ')}</h1><p className="mt-2 text-muted">{en?'Order number':'เลขที่คำสั่งซื้อ'}: {order.orderNumber}</p><p className="mt-2 text-sm">{translateText(ORDER_STATUS_LABEL[order.status]||order.status,locale)}</p>
+   {USE_MOCK_DATA?<p className="mt-2 text-xs text-muted">{en?'Demo order — no payment was taken.':'ออเดอร์ตัวอย่าง — ไม่มีการตัดเงินจริง'}</p>:!paid&&order.paymentMethod!=='cod'&& !['cancelled','refunded'].includes(order.status)?<p role="status" className="mt-3 text-sm text-primary">{en?'Payment has not been confirmed. Refresh after completing payment.':'ยังไม่ยืนยันการชำระเงิน กรุณารีเฟรชหลังชำระเงินแล้ว'}</p>:null}
+  </div>
+  <OrderTimeline order={order}/>
+  <div className="rounded-2xl border border-border bg-surface p-5"><ul className="divide-y divide-border">{order.items.map(item=><li key={item.variantId} className="flex justify-between gap-3 py-3 text-sm"><span>{item.productName} × {item.quantity}</span><span className="shrink-0">{formatCurrency(item.lineTotal)}</span></li>)}</ul><dl className="space-y-2 border-t border-border py-4 text-sm">{[[en?'Subtotal':'ยอดรวมสินค้า',order.subtotal],[en?'Shipping':'ค่าจัดส่ง',order.shippingFee],[en?'Discount':'ส่วนลด',-order.discountAmount],[en?'Total':'ยอดชำระทั้งหมด',order.grandTotal]].map(([label,value])=><div key={label} className="flex justify-between"><dt>{label}</dt><dd>{formatCurrency(Number(value))}</dd></div>)}</dl>
+   <p className="text-sm text-muted">{en?'Deliver to':'จัดส่งไปที่'}: {order.shippingAddress.recipientName}, {order.shippingAddress.addressLine1} {order.shippingAddress.subdistrict} {order.shippingAddress.district} {order.shippingAddress.province} {order.shippingAddress.postalCode}</p>
+  </div>
+  <div className="mt-5 flex flex-wrap gap-3"><ReorderButton order={order}/><button className="focus-ring rounded-xl border border-border px-4 py-2" onClick={()=>setRevision(n=>n+1)}>{en?'Refresh status':'รีเฟรชสถานะ'}</button><Link className="focus-ring rounded-xl border border-border px-4 py-2" href="/account">{en?'My orders':'ดูคำสั่งซื้อของฉัน'}</Link><Link className="focus-ring rounded-xl border border-border px-4 py-2" href="/products">{en?'Continue shopping':'เลือกซื้อสินค้าต่อ'}</Link></div>
+ </div>;
 }

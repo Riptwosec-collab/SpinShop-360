@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { LayoutGrid, List } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,11 +26,12 @@ export function ProductSort({ total }: { total: number }) {
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set(key, value);
+    if (key === "sort") params.delete("page");
     router.push(`/products?${params.toString()}`);
   }
 
   return (
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <Localized><div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <p className="text-sm text-muted">พบสินค้า {total} รายการ</p>
       <div className="flex items-center gap-2">
         <select
@@ -61,6 +65,6 @@ export function ProductSort({ total }: { total: number }) {
           </button>
         </div>
       </div>
-    </div>
+    </div></Localized>
   );
 }

@@ -1,8 +1,11 @@
 "use client";
 
+import { Localized, LocalizedDate } from "@/lib/i18n/localized";
+
+
 import { useEffect, useState } from "react";
 import { ORDER_STATUS_LABEL } from "@/lib/constants";
-import { formatCurrency, formatOrderDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import type { Order } from "@/types/order";
 
 export default function AdminOrdersPage() {
@@ -16,7 +19,7 @@ export default function AdminOrdersPage() {
   }, []);
 
   return (
-    <div>
+    <Localized><div>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">คำสั่งซื้อ</h1>
       <p className="mb-6 text-sm text-muted">
         คำสั่งซื้อที่สร้างระหว่างทดสอบ Checkout ในโหมด Mock จะแสดงที่นี่ ({orders.length} รายการ)
@@ -44,7 +47,7 @@ export default function AdminOrdersPage() {
                 <tr key={o.id}>
                   <td className="px-4 py-3 font-medium text-foreground">{o.orderNumber}</td>
                   <td className="px-4 py-3 text-muted">{o.email}</td>
-                  <td className="px-4 py-3 text-muted">{formatOrderDate(o.createdAt)}</td>
+                  <td className="px-4 py-3 text-muted"><LocalizedDate value={o.createdAt} /></td>
                   <td className="px-4 py-3">{formatCurrency(o.grandTotal)}</td>
                   <td className="px-4 py-3 text-muted">{o.paymentMethod}</td>
                   <td className="px-4 py-3">
@@ -58,6 +61,6 @@ export default function AdminOrdersPage() {
           </table>
         </div>
       )}
-    </div>
+    </div></Localized>
   );
 }

@@ -18,9 +18,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const initial =
-      stored ?? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    let initial: Theme = "dark";
+    try { if (window.localStorage.getItem(STORAGE_KEY) === "light") initial = "light"; } catch { /* Storage is optional. */ }
     setTheme(initial);
     setMounted(true);
   }, []);
@@ -28,7 +27,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     document.documentElement.classList.toggle("light", theme === "light");
-    window.localStorage.setItem(STORAGE_KEY, theme);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    try { window.localStorage.setItem(STORAGE_KEY, theme); } catch { /* Storage is optional. */ }
   }, [theme, mounted]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));

@@ -58,4 +58,9 @@ export interface Order {
   shippingMethod: string;
   customerNote?: string;
   createdAt: string;
+  paymentStatus?: string;
+  trackingNumber?: string | null;
+  trackingCarrier?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
 }

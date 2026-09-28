@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useEffect, useState } from "react";
 import { Radio, AlertTriangle, ShoppingBag } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -69,7 +72,7 @@ export function RealtimeAdminFeed() {
   if (!supabaseConfigured) return null;
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
+    <Localized><div className="rounded-2xl border border-border bg-surface p-5">
       <div className="mb-4 flex items-center gap-2">
         <Radio className={`h-4 w-4 ${connected ? "text-success" : "text-muted"}`} />
         <h2 className="text-sm font-semibold text-foreground">
@@ -97,6 +100,6 @@ export function RealtimeAdminFeed() {
           ))}
         </ul>
       )}
-    </div>
+    </div></Localized>
   );
 }

@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { InfoPageLayout, InfoSection } from "@/components/shared/info-page-layout";
 import { APP_NAME } from "@/lib/constants";
@@ -6,7 +8,7 @@ export const metadata: Metadata = { title: "ข้อกำหนดการใ
 
 export default function TermsPage() {
   return (
-    <InfoPageLayout title="ข้อกำหนดการใช้งาน" subtitle="ปรับปรุงล่าสุด: มกราคม 2569">
+    <Localized><InfoPageLayout title="ข้อกำหนดการใช้งาน" subtitle="ปรับปรุงล่าสุด: มกราคม 2569">
       <InfoSection heading="การยอมรับข้อกำหนด">
         <p>
           การเข้าใช้งานเว็บไซต์ {APP_NAME} ถือว่าคุณยอมรับและตกลงปฏิบัติตามข้อกำหนดการใช้งานฉบับนี้ทั้งหมด
@@ -48,6 +50,6 @@ export default function TermsPage() {
           การเปลี่ยนแปลงจะมีผลทันทีเมื่อประกาศบนหน้านี้ กรุณาตรวจสอบเป็นระยะ
         </p>
       </InfoSection>
-    </InfoPageLayout>
+    </InfoPageLayout></Localized>
   );
 }

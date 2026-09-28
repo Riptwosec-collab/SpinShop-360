@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
 import { Facebook, Instagram, MessageCircle, Rotate3d } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
@@ -26,7 +29,7 @@ export function Footer() {
     ],
   };
   return (
-    <footer className="border-t border-border bg-surface/50">
+    <Localized><footer className="border-t border-border bg-surface/50">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           <div className="col-span-2">
@@ -78,6 +81,6 @@ export function Footer() {
           <p>ออกแบบด้วยแนวคิด Dark Premium Technology</p>
         </div>
       </div>
-    </footer>
+    </footer></Localized>
   );
 }

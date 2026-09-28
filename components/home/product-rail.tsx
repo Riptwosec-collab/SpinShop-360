@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { Product } from "@/types/product";
@@ -17,7 +19,7 @@ export function ProductRail({
   if (products.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <Localized><section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground sm:text-2xl">{title}</h2>
@@ -38,6 +40,6 @@ export function ProductRail({
           <ProductCard key={p.id} product={p} />
         ))}
       </div>
-    </section>
+    </section></Localized>
   );
 }

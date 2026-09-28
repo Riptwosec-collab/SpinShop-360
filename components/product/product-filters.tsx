@@ -1,13 +1,18 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
-import { CATEGORIES } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { CATEGORIES, USE_MOCK_DATA } from "@/lib/constants";
+import type { CatalogCategory } from "@/lib/services/products";
+import { Modal } from "@/components/shared/modal";
 
 interface ProductFiltersProps {
   brands: string[];
+  categories?: CatalogCategory[];
 }
 
 const PRICE_RANGES = [
@@ -17,7 +22,7 @@ const PRICE_RANGES = [
   { label: "มากกว่า 20,000 บาท", min: 20000, max: undefined },
 ];
 
-export function ProductFilters({ brands }: ProductFiltersProps) {
+export function ProductFilters({ brands, categories = USE_MOCK_DATA ? [...CATEGORIES] : [] }: ProductFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -55,7 +60,7 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
 
       <FilterGroup title="หมวดหมู่">
         <div className="flex flex-col gap-1.5">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <FilterCheckbox
               key={cat.slug}
               label={cat.name}
@@ -82,7 +87,7 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
       <FilterGroup title="ช่วงราคา">
         <div className="flex flex-col gap-1.5">
           {PRICE_RANGES.map((range) => {
-            const checked = activeMin === String(range.min) && activeMax === String(range.max ?? "");
+            const checked = activeMin === String(range.min) && (activeMax ?? "") === String(range.max ?? "");
             return (
               <FilterCheckbox
                 key={range.label}
@@ -90,8 +95,11 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
                 checked={checked}
                 onChange={() => {
                   if (checked) {
-                    updateParam("minPrice", null);
-                    updateParam("maxPrice", null);
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.delete("minPrice");
+                    params.delete("maxPrice");
+                    params.delete("page");
+                    router.push(`/products?${params.toString()}`);
                   } else {
                     const params = new URLSearchParams(searchParams.toString());
                     params.set("minPrice", String(range.min));
@@ -111,7 +119,6 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
         <div className="flex flex-col gap-1.5">
           <FilterCheckbox label="รองรับ 3D" checked={searchParams.get("supports3d") === "true"} onChange={() => toggleBoolParam("supports3d")} />
           <FilterCheckbox label="รองรับ 360 องศา" checked={searchParams.get("supports360") === "true"} onChange={() => toggleBoolParam("supports360")} />
-          <FilterCheckbox label="รองรับ AR" checked={searchParams.get("supportsAr") === "true"} onChange={() => toggleBoolParam("supportsAr")} />
         </div>
       </FilterGroup>
 
@@ -126,7 +133,7 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
   );
 
   return (
-    <>
+    <Localized><>
       <button
         onClick={() => setDrawerOpen(true)}
         className="focus-ring mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm lg:hidden"
@@ -135,19 +142,9 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
         ตัวกรอง
       </button>
 
-      <aside className="hidden w-64 shrink-0 lg:block">{content}</aside>
+      <aside className="premium-panel hidden h-fit w-60 shrink-0 p-5 lg:sticky lg:top-36 lg:block">{content}</aside>
 
-      <div className={cn("fixed inset-0 z-50 lg:hidden", drawerOpen ? "pointer-events-auto" : "pointer-events-none")}>
-        <div
-          className={cn("absolute inset-0 bg-black/60 transition-opacity", drawerOpen ? "opacity-100" : "opacity-0")}
-          onClick={() => setDrawerOpen(false)}
-        />
-        <div
-          className={cn(
-            "absolute inset-x-0 bottom-0 max-h-[85vh] overflow-auto rounded-t-2xl border-t border-border bg-background p-5 transition-transform",
-            drawerOpen ? "translate-y-0" : "translate-y-full"
-          )}
-        >
+      <Modal open={drawerOpen} onClose={() => setDrawerOpen(false)} label="ตัวกรองสินค้า" className="mobile-safe mt-auto max-h-[85dvh] w-full rounded-t-3xl border-t p-5">
           <div className="mb-4 flex items-center justify-between">
             <span className="text-sm font-semibold">ตัวกรองสินค้า</span>
             <button onClick={() => setDrawerOpen(false)} aria-label="ปิด" className="focus-ring text-muted">
@@ -161,18 +158,17 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
           >
             แสดงผลลัพธ์
           </button>
-        </div>
-      </div>
-    </>
+      </Modal>
+    </></Localized>
   );
 }
 
 function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
+    <Localized><div>
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">{title}</p>
       {children}
-    </div>
+    </div></Localized>
   );
 }
 
@@ -186,7 +182,7 @@ function FilterCheckbox({
   onChange: () => void;
 }) {
   return (
-    <label className="focus-ring flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-muted hover:text-foreground">
+    <Localized><label className="focus-ring flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-muted hover:text-foreground">
       <input
         type="checkbox"
         checked={checked}
@@ -194,6 +190,6 @@ function FilterCheckbox({
         className="h-4 w-4 rounded border-border accent-[rgb(var(--primary))]"
       />
       {label}
-    </label>
+    </label></Localized>
   );
 }

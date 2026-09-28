@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Image from "next/image";
 import { X } from "lucide-react";
 import { useCompareStore } from "@/lib/stores/compare-store";
-import { MOCK_PRODUCTS } from "@/lib/mock-data/products";
+import { useCatalogProducts } from "@/lib/hooks/use-catalog-products";
+import type { Product } from "@/types/product";
 import { PriceDisplay } from "@/components/product/price-display";
 import { RatingStars } from "@/components/product/rating-stars";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -12,7 +15,7 @@ import { useCartStore } from "@/lib/stores/cart-store";
 import { useToastStore } from "@/lib/stores/toast-store";
 import { useTranslation } from "@/lib/i18n/locale-provider";
 
-const ROWS: { label: string; get: (p: (typeof MOCK_PRODUCTS)[number]) => string }[] = [
+const ROWS: { label: string; get: (p: Product) => string }[] = [
   { label: "ราคา", get: (p) => `฿${p.basePrice.toLocaleString()}` },
   { label: "แบรนด์", get: (p) => p.brand },
   { label: "คะแนนรีวิว", get: (p) => `${p.reviewSummary.average.toFixed(1)} (${p.reviewSummary.count})` },
@@ -20,7 +23,6 @@ const ROWS: { label: string; get: (p: (typeof MOCK_PRODUCTS)[number]) => string 
   { label: "น้ำหนัก", get: (p) => (p.dimensions ? `${p.dimensions.weightKg} กก.` : "-") },
   { label: "รองรับ 3D", get: (p) => (p.supports3d ? "รองรับ" : "ไม่รองรับ") },
   { label: "รองรับ 360°", get: (p) => (p.supports360 ? "รองรับ" : "ไม่รองรับ") },
-  { label: "รองรับ AR", get: (p) => (p.supportsAr ? "รองรับ" : "ไม่รองรับ") },
   { label: "สถานะสินค้า", get: (p) => (p.stockQuantity > 0 ? "พร้อมส่ง" : "สินค้าหมด") },
 ];
 
@@ -28,19 +30,16 @@ export default function ComparePage() {
   const { t } = useTranslation();
   const productIds = useCompareStore((s) => s.productIds);
   const remove = useCompareStore((s) => s.remove);
-  const products = useMemo(
-    () => MOCK_PRODUCTS.filter((p) => productIds.includes(p.id)),
-    [productIds]
-  );
+  const {products,loading,error} = useCatalogProducts(productIds);
   const addItem = useCartStore((s) => s.addItem);
   const pushToast = useToastStore((s) => s.push);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <Localized><div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="mb-2 text-2xl font-semibold text-foreground">{t.compare.title}</h1>
       <p className="mb-6 text-sm text-muted">{t.compare.subtitle} (เพิ่มสินค้าเข้าเปรียบเทียบได้จากหน้ารายการสินค้า)</p>
 
-      {products.length === 0 ? (
+      {loading ? <p role="status">กำลังโหลดสินค้า / Loading products…</p> : error ? <p role="alert">ไม่สามารถโหลดสินค้าได้ กรุณาลองใหม่ / Unable to load products; try again</p> : products.length === 0 ? (
         <EmptyState
           title={t.compare.empty}
           description="ไปที่หน้าสินค้าทั้งหมดแล้วเลือกสินค้าที่ต้องการเปรียบเทียบ"
@@ -71,6 +70,7 @@ export default function ComparePage() {
                     <button
                       onClick={() => {
                         const variant = p.variants[0];
+                        if (!variant || !variant.isActive || variant.stockQuantity < 1) return;
                         const result = addItem({
                           productId: p.id,
                           variantId: variant.id,
@@ -85,6 +85,7 @@ export default function ComparePage() {
                         });
                         pushToast(result.message, result.ok ? "success" : "error");
                       }}
+                      disabled={!p.variants[0]?.isActive || p.variants[0].stockQuantity < 1}
                       className="focus-ring mt-3 w-full rounded-lg bg-primary py-2 text-xs font-medium text-white hover:bg-primary-hover"
                     >
                       เพิ่มลงตะกร้า
@@ -113,6 +114,6 @@ export default function ComparePage() {
           </table>
         </div>
       )}
-    </div>
+    </div></Localized>
   );
 }

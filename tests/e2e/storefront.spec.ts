@@ -2,13 +2,14 @@ import { test, expect } from "@playwright/test";
 
 test("ค้นหาสินค้าแล้วแสดงผลลัพธ์ที่เกี่ยวข้อง", async ({ page }) => {
   await page.goto("/products?search=Vertex");
-  await expect(page.getByRole("heading", { name: /Vertex/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Vertex/, level: 1 })).toBeVisible();
 });
 
 test("กรองสินค้าตามหมวดหมู่ผ่าน URL query แล้วอัปเดต URL ถูกต้อง", async ({ page }) => {
   await page.goto("/products");
-  await page.getByRole("checkbox", { name: "อุปกรณ์เกมมิง" }).check();
+  await page.getByRole("checkbox", { name: "อุปกรณ์เกมมิง" }).click();
   await expect(page).toHaveURL(/category=gaming/);
+  await expect(page.getByRole("checkbox", { name: "อุปกรณ์เกมมิง" })).toBeChecked();
 });
 
 test("ปิดกั้นผู้ใช้ที่ยังไม่เข้าสู่ระบบด้วยสิทธิ์ผู้ดูแลจากหน้า Admin", async ({ page }) => {

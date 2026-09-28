@@ -1,12 +1,12 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useToastStore } from "@/lib/stores/toast-store";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { USE_MOCK_DATA } from "@/lib/constants";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,55 +20,25 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!fullName.trim()) { setError("กรุณากรอกชื่อ"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("กรุณากรอกอีเมลให้ถูกต้อง"); return; }
     if (password.length < 8) {
       setError("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
       return;
     }
     setSubmitting(true);
 
-    if (USE_MOCK_DATA) {
-      const result = register(email, password, fullName);
-      setSubmitting(false);
-      if (result.ok) {
-        pushToast(result.message, "success");
-        router.push("/account");
-      } else {
-        setError(result.message);
-      }
-      return;
-    }
-
-    const supabase = createSupabaseBrowserClient();
-    if (!supabase) {
-      setSubmitting(false);
-      setError("ไม่สามารถเชื่อมต่อระบบยืนยันตัวตนได้ กรุณาตรวจสอบการตั้งค่า Supabase");
-      return;
-    }
-
-    const { data, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
+    setError(null);
+    const result = await register(email, password, fullName);
     setSubmitting(false);
-
-    if (authError) {
-      setError(authError.message);
-      return;
-    }
-
-    if (data.session) {
-      pushToast("สมัครสมาชิกสำเร็จ", "success");
-      router.push("/account");
-      router.refresh();
-    } else {
-      pushToast("สมัครสมาชิกสำเร็จ กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ", "success");
-      router.push("/login");
-    }
+    if (!result.ok) { setError(result.message); return; }
+    pushToast(result.message, "success");
+    router.push(result.needsConfirmation ? "/login" : "/account");
+    router.refresh();
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
+    <Localized><div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
       <h1 className="mb-1 text-2xl font-semibold text-foreground">สมัครสมาชิก</h1>
       <p className="mb-6 text-sm text-muted">สร้างบัญชีเพื่อรับสิทธิพิเศษและติดตามคำสั่งซื้อ</p>
 
@@ -108,6 +78,6 @@ export default function RegisterPage() {
           เข้าสู่ระบบ
         </Link>
       </p>
-    </div>
+    </div></Localized>
   );
 }

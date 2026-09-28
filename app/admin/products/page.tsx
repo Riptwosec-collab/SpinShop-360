@@ -1,7 +1,10 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
-import { Plus, Box, RotateCw, Smartphone } from "lucide-react";
+import { Plus, Box, RotateCw } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useAdminProducts } from "@/lib/hooks/use-admin-products";
 
@@ -16,7 +19,7 @@ export default function AdminProductsPage() {
   const { products, loading } = useAdminProducts();
 
   return (
-    <div>
+    <Localized><div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">จัดการสินค้า</h1>
@@ -67,7 +70,6 @@ export default function AdminProductsPage() {
                     <div className="flex gap-1">
                       {p.supports3d && <span title="3D"><Box className="h-3.5 w-3.5 text-accent" /></span>}
                       {p.supports360 && <span title="360°"><RotateCw className="h-3.5 w-3.5 text-primary" /></span>}
-                      {p.supportsAr && <span title="AR"><Smartphone className="h-3.5 w-3.5 text-success" /></span>}
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -86,6 +88,6 @@ export default function AdminProductsPage() {
           </table>
         </div>
       )}
-    </div>
+    </div></Localized>
   );
 }

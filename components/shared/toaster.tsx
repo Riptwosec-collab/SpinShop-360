@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { CheckCircle2, XCircle, Info, X } from "lucide-react";
 import { useToastStore } from "@/lib/stores/toast-store";
 import { cn } from "@/lib/utils";
@@ -15,8 +18,8 @@ export function Toaster() {
   const dismiss = useToastStore((s) => s.dismiss);
 
   return (
-    <div
-      className="pointer-events-none fixed bottom-4 left-1/2 z-[100] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-4 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0"
+    <Localized><div
+      className="pointer-events-none fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 z-[100] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-4 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0"
       aria-live="polite"
       role="status"
     >
@@ -51,6 +54,6 @@ export function Toaster() {
           </div>
         );
       })}
-    </div>
+    </div></Localized>
   );
 }

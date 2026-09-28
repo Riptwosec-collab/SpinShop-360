@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -57,19 +60,19 @@ export function CartPageContent() {
 
   if (items.length === 0) {
     return (
-      <EmptyState
+      <Localized><EmptyState
         title={t.cart.empty}
         description={t.cart.emptyDesc}
         actionHref="/products"
         actionLabel="เลือกซื้อสินค้า"
-      />
+      /></Localized>
     );
   }
 
   const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+    <Localized><div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <div className="lg:col-span-2">
         {remaining > 0 ? (
           <p className="mb-4 text-sm text-muted">
@@ -188,6 +191,6 @@ export function CartPageContent() {
           {t.cart.continueShopping}
         </Link>
       </div>
-    </div>
+    </div></Localized>
   );
 }

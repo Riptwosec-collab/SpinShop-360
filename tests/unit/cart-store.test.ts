@@ -95,3 +95,13 @@ describe("cart-store", () => {
     expect(useCartStore.getState().total()).toBe(1800); // 2000 - 200 + free shipping
   });
 });
+
+it("refreshes cached price and stock when reordering an existing variant", () => {
+  useCartStore.getState().clearCart();
+  useCartStore.getState().addItem(sampleItem);
+  const id = useCartStore.getState().items[0].id;
+  useCartStore.getState().addItem({ ...sampleItem, unitPrice: 1400, stockQuantity: 3 });
+  expect(useCartStore.getState().items[0]).toMatchObject({ id, unitPrice: 1400, stockQuantity: 3, quantity: 2 });
+  useCartStore.getState().updateQuantity(id, 99);
+  expect(useCartStore.getState().items[0].quantity).toBe(3);
+});

@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --background: 8 13 24;
+    --surface: 16 24 40;
+    --surface-secondary: 24 35 54;
+    --border: 43 57 77;
+    --foreground: 237 243 250;
+    --muted: 161 176 196;
+    --primary: 37 99 235;
+    --primary-hover: 29 78 216;
+    --accent: 34 211 238;
+    --success: 52 211 153;
+    --warning: 251 191 36;
+    --danger: 251 113 133;
+  }
+  :root.light {
+    color-scheme: light;
+    --background: 246 248 252;
+    --surface: 255 255 255;
+    --surface-secondary: 233 239 248;
+    --border: 207 216 230;
+    --foreground: 16 30 52;
+    --muted: 78 96 120;
+    --accent: 8 116 145;
+    --success: 4 120 87;
+    --warning: 161 98 7;
+    --danger: 190 18 60;
+  }
+  * { @apply border-border; }
+  html { scroll-behavior: smooth; scroll-padding-top: 8rem; }
+  body { @apply bg-background font-sans text-foreground antialiased; margin: 0; }
+  ::selection { background: rgb(var(--accent) / .28); }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  button { touch-action: manipulation; }
+  button:disabled { cursor: not-allowed; }
+  input, select, textarea { max-width: 100%; }
+  :focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 4px; }
+  main { min-width: 0; }
+}
+
+@layer components {
+  .input { @apply min-h-11 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:opacity-50; }
+  .focus-ring { @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent; }
+  .glass-surface { @apply border border-border bg-surface/90 backdrop-blur-glass; }
+  .premium-panel { @apply rounded-3xl border border-border bg-surface/80 shadow-soft; }
+  .primary-action { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover active:scale-[.98] disabled:opacity-40; }
+  .icon-action { @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted transition hover:bg-surface-secondary hover:text-foreground; }
+  .page-enter { animation: fade-in .35s ease-out both; }
+  .mobile-safe { padding-bottom: max(.75rem, env(safe-area-inset-bottom)); }
+  .store-shell { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+  .hero-grid {
+    background-image: linear-gradient(rgb(var(--border) / .25) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--border) / .25) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: linear-gradient(to bottom, black, transparent);
+  }
+  .skeleton { @apply animate-pulse rounded-xl bg-surface-secondary; }
+}
+@media (min-width: 640px) { .store-shell { padding-bottom: 0; } }
+@media (max-width: 639px) { input, select, textarea { font-size: 16px !important; } }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

@@ -1,6 +1,6 @@
 export type ProductStatus = "draft" | "active" | "out_of_stock" | "archived";
 
-export type ViewerMode = "image" | "360" | "3d" | "ar";
+export type ViewerMode = "image" | "360" | "3d";
 
 export type OptionDisplayType = "select" | "buttons" | "color" | "image";
 

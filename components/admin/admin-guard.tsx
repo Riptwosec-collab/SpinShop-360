@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -9,7 +12,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
 
   if (!user || (user.role !== "admin" && user.role !== "staff")) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3 px-4 text-center">
+      <Localized><div className="flex min-h-[70vh] flex-col items-center justify-center gap-3 px-4 text-center">
         <ShieldAlert className="h-10 w-10 text-warning" />
         <h1 className="text-lg font-semibold text-foreground">ต้องเข้าสู่ระบบด้วยสิทธิ์ผู้ดูแล</h1>
         <p className="max-w-sm text-sm text-muted">
@@ -18,9 +21,9 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
         <Link href="/login" className="focus-ring rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white">
           เข้าสู่ระบบ
         </Link>
-      </div>
+      </div></Localized>
     );
   }
 
-  return <>{children}</>;
+  return <Localized><>{children}</></Localized>;
 }

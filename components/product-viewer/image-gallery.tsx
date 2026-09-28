@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { useStudioMessages } from "./studio-messages";
 import type { ProductImage } from "@/types/product";
 
 export function ImageGallery({ images, alt }: { images: ProductImage[]; alt: string }) {
+  const t = useStudioMessages();
   const [active, setActive] = useState(0);
   if (images.length === 0) return null;
 
@@ -31,7 +33,7 @@ export function ImageGallery({ images, alt }: { images: ProductImage[]; alt: str
                 "relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors focus-ring",
                 i === active ? "border-primary" : "border-border hover:border-primary/40"
               )}
-              aria-label={`ดูรูปที่ ${i + 1}`}
+              aria-label={`${t.photo} ${i + 1}`}
               aria-current={i === active}
             >
               <Image src={img.url} alt="" fill sizes="64px" className="object-cover" />

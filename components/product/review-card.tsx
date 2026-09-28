@@ -1,11 +1,12 @@
+
+import { Localized, LocalizedDate } from "@/lib/i18n/localized";
 import { BadgeCheck, ThumbsUp } from "lucide-react";
 import type { Review } from "@/types/review";
 import { RatingStars } from "./rating-stars";
-import { formatOrderDate } from "@/lib/utils";
 
 export function ReviewCard({ review }: { review: Review }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <Localized><div className="rounded-xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-secondary text-sm font-medium text-foreground">
@@ -13,14 +14,14 @@ export function ReviewCard({ review }: { review: Review }) {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="text-sm font-medium text-foreground">{review.userName}</p>
+              <p data-no-localize className="text-sm font-medium text-foreground">{review.userName}</p>
               {review.isVerifiedPurchase && (
                 <span className="flex items-center gap-0.5 text-[10px] text-success">
                   <BadgeCheck className="h-3 w-3" /> ซื้อสินค้าแล้ว
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted">{formatOrderDate(review.createdAt)}</p>
+            <p className="text-xs text-muted"><LocalizedDate value={review.createdAt} /></p>
           </div>
         </div>
         <RatingStars rating={review.rating} />
@@ -34,6 +35,6 @@ export function ReviewCard({ review }: { review: Review }) {
         <ThumbsUp className="h-3.5 w-3.5" />
         มีประโยชน์ ({review.helpfulCount})
       </button>
-    </div>
+    </div></Localized>
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
+import { Localized } from "@/lib/i18n/localized";
+import { useTranslation } from "@/lib/i18n/locale-provider";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -12,6 +15,7 @@ import { createOrder } from "@/lib/services/orders";
 import { formatCurrency, cn } from "@/lib/utils";
 import { DEFAULT_SHIPPING_FEE, USE_MOCK_DATA } from "@/lib/constants";
 import { track } from "@/lib/analytics";
+import { loadCheckoutSession, saveCheckoutSession, discardRejectedCheckout, type CheckoutSession } from "@/lib/services/checkout-session";
 import { OmiseCardForm } from "@/components/checkout/omise-card-form";
 
 const USE_OMISE_CARD_FLOW =
@@ -29,6 +33,12 @@ const PAYMENT_OPTIONS: { value: CheckoutFormValues["paymentMethod"]; label: stri
 
 export function CheckoutFlow() {
   const router = useRouter();
+  const { locale } = useTranslation();
+  const en = locale === "en";
+  const [pending, setPending] = useState<CheckoutSession | null>(null);
+  const [recoveryReady, setRecoveryReady] = useState(USE_MOCK_DATA);
+  const paymentLock = useRef(false);
+  const [paymentQr, setPaymentQr] = useState<string|null>(null);
   const items = useCartStore((s) => s.items);
   const subtotal = useCartStore((s) => s.subtotal());
   const discount = useCartStore((s) => s.discount);
@@ -39,6 +49,12 @@ export function CheckoutFlow() {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [omiseCardToken, setOmiseCardToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (USE_MOCK_DATA) return;
+    try { setPending(loadCheckoutSession()); setRecoveryReady(true); }
+    catch { pushToast(en ? "Checkout recovery is unavailable. Please enable browser storage." : "ไม่สามารถกู้คืนคำสั่งซื้อได้ กรุณาเปิดใช้งานพื้นที่เก็บข้อมูลของเบราว์เซอร์", "error"); }
+  }, [en, pushToast]);
 
   useEffect(() => {
     if (items.length > 0) {
@@ -100,6 +116,7 @@ export function CheckoutFlow() {
   }
 
   async function onSubmit(values: CheckoutFormValues) {
+    if (submitting) return;
     if (items.length === 0) {
       pushToast("ตะกร้าสินค้าว่างเปล่า", "error");
       return;
@@ -132,89 +149,111 @@ export function CheckoutFlow() {
       return;
     }
 
-    // Supabase mode: create the order via the server (atomic stock check +
-    // transaction), then create the payment with the active gateway.
     try {
-      const orderRes = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: values.buyer.email,
-          phone: values.buyer.phone,
-          items,
-          shippingAddress: values.shippingAddress,
-          paymentMethod: values.paymentMethod,
-          shippingMethod: values.shippingMethod,
-          couponCode,
-          discount,
-          customerNote: values.customerNote,
-          shippingFee,
-        }),
-      });
-      const orderResult = await orderRes.json();
+      // Write before sending anything: a reload after a lost response must replay
+      // this exact request, never reserve another order or another payment.
+      const session: CheckoutSession = pending ?? { key: crypto.randomUUID(), request: {
+        email: values.buyer.email, phone: values.buyer.phone, items,
+        shippingAddress: values.shippingAddress, paymentMethod: values.paymentMethod,
+        shippingMethod: values.shippingMethod, couponCode, customerNote: values.customerNote,
+      } };
+      saveCheckoutSession(session);
+      setPending(session);
+      await recoverOrder(session);
+    } catch { connectionError(); }
+    finally { setSubmitting(false); }
+  }
 
-      if (!orderResult.ok) {
-        pushToast(orderResult.message, "error");
-        setSubmitting(false);
-        return;
+  function connectionError() {
+    pushToast(en ? "Connection interrupted. Resume this checkout to use the same order." : "การเชื่อมต่อขัดข้อง กรุณาดำเนินการต่อจากคำสั่งซื้อเดิม", "error");
+  }
+
+  async function recoverOrder(session: CheckoutSession) {
+    const response = await fetch("/api/orders", {
+      method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": session.key },
+      body: JSON.stringify(session.request),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) {
+      if (response.status === 400 && result.code === "ORDER_CREATE_FAILED") {
+        discardRejectedCheckout(session.key);
+        setPending(null);
       }
-
-      const isOmiseCard =
-        USE_OMISE_CARD_FLOW && (values.paymentMethod === "credit_card" || values.paymentMethod === "debit_card");
-
-      if (values.paymentMethod !== "cod") {
-        const paymentRes = isOmiseCard
-          ? await fetch("/api/payments/omise/charge-card", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                token: omiseCardToken,
-                orderId: orderResult.order.id,
-                orderNumber: orderResult.order.orderNumber,
-                amount: orderResult.order.grandTotal,
-                currency: "THB",
-                customerEmail: values.buyer.email,
-              }),
-            })
-          : await fetch("/api/payments/create", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                orderId: orderResult.order.id,
-                orderNumber: orderResult.order.orderNumber,
-                amount: orderResult.order.grandTotal,
-                currency: "THB",
-                method: values.paymentMethod,
-                customerEmail: values.buyer.email,
-                returnUrl: `${window.location.origin}/order-success/${orderResult.order.orderNumber}`,
-              }),
-            });
-        const paymentResult = await paymentRes.json();
-
-        setSubmitting(false);
-
-        if (!paymentResult.ok) {
-          pushToast(paymentResult.message, "error");
-          return;
-        }
-
-        clearCart();
-        const redirectTo = paymentResult.redirectUrl ?? paymentResult.authorizeUri;
-        if (redirectTo) {
-          window.location.href = redirectTo;
-          return;
-        }
-      }
-
-      setSubmitting(false);
-      pushToast("สั่งซื้อสำเร็จ", "success");
-      track("purchase", { orderNumber: orderResult.order.orderNumber, grandTotal: orderResult.order.grandTotal, itemCount: items.length });
-      clearCart();
-      router.push(`/order-success/${orderResult.order.orderNumber}`);
-    } catch {
-      setSubmitting(false);
-      pushToast("เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่", "error");
+      pushToast(en ? "Could not create the order. Check your items or contact support before starting another checkout." : "สร้างคำสั่งซื้อไม่สำเร็จ กรุณาตรวจสอบสินค้าหรือติดต่อร้านก่อนสร้างคำสั่งซื้อใหม่", "error");
+      return;
     }
+    const saved = { ...session, order: result.order };
+    saveCheckoutSession(saved);
+    setPending(saved);
+    // Stop here. The customer must explicitly confirm the authoritative amount
+    // below; a stale cart price can never trigger a higher unconfirmed charge.
+  }
+
+  function consumeOrderedCart(session: CheckoutSession) {
+    if (session.cartConsumed) return;
+    const cart = useCartStore.getState();
+    for (const ordered of session.request.items) {
+      const current = cart.items.find(item => item.id === ordered.id);
+      if (!current) continue;
+      if (current.quantity <= ordered.quantity) cart.removeItem(current.id);
+      else cart.updateQuantity(current.id, current.quantity - ordered.quantity);
+    }
+    cart.clearCoupon();
+    const saved = { ...session, cartConsumed: true };
+    saveCheckoutSession(saved);
+    setPending(saved);
+  }
+
+  async function confirmPayment() {
+    if (!pending || paymentLock.current) return;
+    paymentLock.current = true;
+    setSubmitting(true);
+    try {
+      if (!pending.order) { await recoverOrder(pending); return; }
+      // Ensure recovery remains durable before contacting the gateway.
+      saveCheckoutSession(pending);
+      const order = pending.order;
+      const method = pending.request.paymentMethod;
+      const isCard = USE_OMISE_CARD_FLOW && ["credit_card", "debit_card"].includes(method);
+      if (isCard && !omiseCardToken) return;
+      if (method !== "cod") {
+        const response = await fetch(isCard ? "/api/payments/omise/charge-card" : "/api/payments/create", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(isCard ? { orderId: order.id, token: omiseCardToken } : { orderId: order.id }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+          pushToast(en ? "Payment could not be confirmed. Check the saved order status before retrying." : "ยังยืนยันการชำระเงินไม่ได้ กรุณาตรวจสอบสถานะคำสั่งซื้อเดิมก่อนลองใหม่", "error");
+          return;
+        }
+        consumeOrderedCart(pending);
+        const redirect = result.redirectUrl ?? result.authorizeUri;
+        if (redirect) { window.location.assign(redirect); return; }
+        if (result.qrCodeData) { setPaymentQr(result.qrCodeData); return; }
+      } else { consumeOrderedCart(pending); }
+      router.push(`/order-success/${encodeURIComponent(order.orderNumber)}`);
+    } catch { connectionError(); }
+    finally { paymentLock.current = false; setSubmitting(false); }
+  }
+
+  if (!recoveryReady) return <p role="status">{en ? "Checking saved checkout. If this message remains, enable browser storage and reload, or contact support about your pending order." : "กำลังตรวจสอบคำสั่งซื้อเดิม หากข้อความนี้ค้างอยู่ กรุณาเปิดพื้นที่เก็บข้อมูลเบราว์เซอร์แล้วรีเฟรช หรือติดต่อร้านเกี่ยวกับออเดอร์ที่ค้างอยู่"}</p>;
+  if (pending) {
+    const needsCard = USE_OMISE_CARD_FLOW && ["credit_card", "debit_card"].includes(pending.request.paymentMethod);
+    return <section className="mx-auto max-w-xl space-y-5 rounded-2xl border border-border bg-surface p-6">
+      <h2 className="text-xl font-semibold">{en ? "Confirm your order total" : "ยืนยันยอดคำสั่งซื้อ"}</h2>
+      <p className="text-sm text-muted">{en ? "This checkout is saved. Reloading or returning from payment will resume the same order." : "บันทึกคำสั่งซื้อนี้แล้ว เมื่อรีเฟรชหรือกลับจากหน้าชำระเงิน ระบบจะใช้ออเดอร์เดิม"}</p>
+      {pending.order ? <>
+        <p>{en ? "Order" : "คำสั่งซื้อ"}: {pending.order.orderNumber}</p>
+        <p className="text-2xl font-semibold" data-testid="server-order-total">{formatCurrency(pending.order.grandTotal)}</p>
+        <p className="text-sm">{en ? "Final total including current prices, shipping and eligible discounts. Confirm this amount to continue." : "ยอดจริงรวมราคาปัจจุบัน ค่าจัดส่ง และส่วนลดที่ใช้ได้ กรุณายืนยันยอดนี้ก่อนดำเนินการต่อ"}</p>
+        <Link href={`/order-success/${encodeURIComponent(pending.order.orderNumber)}`} className="block text-primary underline">{en ? "View order and payment status" : "ดูคำสั่งซื้อและสถานะการชำระเงิน"}</Link>
+        {needsCard && !omiseCardToken && <OmiseCardForm onToken={setOmiseCardToken} disabled={submitting}/>}
+      </> : <p role="status">{en ? "Recover the saved request to check whether your order was created." : "เรียกคืนคำขอเดิมเพื่อตรวจสอบว่าคำสั่งซื้อถูกสร้างแล้วหรือไม่"}</p>}
+      {paymentQr && <a href={paymentQr} target="_blank" rel="noopener noreferrer" className="block text-primary underline">{en ? "Open payment QR code" : "เปิด QR สำหรับชำระเงิน"}</a>}
+      <button type="button" disabled={submitting || !!pending.order && needsCard && !omiseCardToken} onClick={() => void confirmPayment()} className="primary-button disabled:opacity-50">
+        {submitting ? (en ? "Please wait…" : "กรุณารอสักครู่…") : !pending.order ? (en ? "Recover saved order" : "เรียกคืนคำสั่งซื้อเดิม") : `${en ? "Confirm" : "ยืนยันยอด"} ${formatCurrency(pending.order.grandTotal)}`}
+      </button>
+    </section>;
   }
 
   if (items.length === 0) {
@@ -226,8 +265,12 @@ export function CheckoutFlow() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      <form onSubmit={handleSubmit(onSubmit)} className="lg:col-span-2">
+    <Localized><div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <form onSubmit={(event) => {
+        event.preventDefault();
+        if (step < STEPS.length - 1) { void goNext(); return; }
+        void handleSubmit(onSubmit)(event);
+      }} className="lg:col-span-2">
         <ol className="mb-8 flex items-center gap-2" aria-label="ขั้นตอนการชำระเงิน">
           {STEPS.map((label, i) => (
             <li key={label} className="flex items-center gap-2">
@@ -323,7 +366,7 @@ export function CheckoutFlow() {
             <div>
               <legend className="mb-2 text-base font-semibold text-foreground">วิธีชำระเงิน</legend>
               <div className="flex flex-col gap-2">
-                {PAYMENT_OPTIONS.map((opt) => (
+                {PAYMENT_OPTIONS.filter(option => USE_MOCK_DATA || option.value !== "bank_transfer").map((opt) => (
                   <RadioCard
                     key={opt.value}
                     name="paymentMethod"
@@ -381,6 +424,7 @@ export function CheckoutFlow() {
           </button>
           {step < STEPS.length - 1 ? (
             <button
+              key="next-step"
               type="button"
               onClick={goNext}
               className="focus-ring rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-hover"
@@ -389,6 +433,7 @@ export function CheckoutFlow() {
             </button>
           ) : (
             <button
+              key="confirm-order"
               type="submit"
               disabled={submitting}
               className="focus-ring flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-60"
@@ -433,7 +478,7 @@ export function CheckoutFlow() {
           </div>
         </dl>
       </aside>
-    </div>
+    </div></Localized>
   );
 }
 
@@ -447,7 +492,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1.5">
+    <Localized><label className="flex flex-col gap-1.5">
       <span className="text-sm font-medium text-foreground">{label}</span>
       {children}
       {error && (
@@ -455,7 +500,7 @@ function Field({
           {error}
         </span>
       )}
-    </label>
+    </label></Localized>
   );
 }
 
@@ -477,7 +522,7 @@ function RadioCard({
   icon?: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <label
+    <Localized><label
       className={cn(
         "focus-ring flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors",
         checked ? "border-primary bg-primary/10" : "border-border bg-surface hover:border-primary/30"
@@ -487,6 +532,6 @@ function RadioCard({
       {Icon && <Icon className="h-4 w-4 text-primary" />}
       <span className="flex-1 text-sm text-foreground">{label}</span>
       {sublabel && <span className="text-xs text-muted">{sublabel}</span>}
-    </label>
+    </label></Localized>
   );
 }

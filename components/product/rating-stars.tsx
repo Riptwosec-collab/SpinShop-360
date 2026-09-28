@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +14,7 @@ export function RatingStars({
 }) {
   const starSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
   return (
-    <div className="flex items-center gap-1" aria-label={`คะแนน ${rating} จาก 5`}>
+    <Localized><div className="flex items-center gap-1" aria-label={`คะแนน ${rating} จาก 5`}>
       <div className="flex items-center">
         {Array.from({ length: 5 }).map((_, i) => (
           <Star
@@ -28,6 +30,6 @@ export function RatingStars({
         {rating.toFixed(1)}
         {count != null && ` (${count})`}
       </span>
-    </div>
+    </div></Localized>
   );
 }

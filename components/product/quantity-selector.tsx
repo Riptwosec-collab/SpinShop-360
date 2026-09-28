@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { Minus, Plus } from "lucide-react";
 
 export function QuantitySelector({
@@ -12,7 +15,7 @@ export function QuantitySelector({
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="inline-flex items-center rounded-lg border border-border">
+    <Localized><div className="inline-flex items-center rounded-lg border border-border">
       <button
         onClick={() => onChange(Math.max(1, value - 1))}
         disabled={value <= 1}
@@ -41,6 +44,6 @@ export function QuantitySelector({
       >
         <Plus className="h-4 w-4" />
       </button>
-    </div>
+    </div></Localized>
   );
 }

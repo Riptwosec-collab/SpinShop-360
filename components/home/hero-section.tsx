@@ -1,61 +1,33 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
-import { RotateCw, Smartphone, Truck, ShieldCheck } from "lucide-react";
-import { HeroViewer } from "@/components/home/hero-viewer";
+import { ArrowUpRight, Rotate3d, Scan, SlidersHorizontal, Sparkles } from "lucide-react";
+import { HeroViewer } from "./hero-viewer";
 import { useTranslation } from "@/lib/i18n/locale-provider";
 
-const HIGHLIGHTS = [
-  { icon: RotateCw, label: "หมุนดูได้ 360°" },
-  { icon: Smartphone, label: "รองรับ AR" },
-  { icon: Truck, label: "จัดส่งทั่วประเทศ" },
-  { icon: ShieldCheck, label: "ชำระเงินปลอดภัย" },
-];
-
 export function HeroSection() {
-  const { t } = useTranslation();
-
-  return (
-    <section className="relative overflow-hidden border-b border-border">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgb(var(--primary)/0.18),transparent_40%),radial-gradient(circle_at_80%_60%,rgb(var(--accent)/0.15),transparent_45%)]" />
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-24">
-        <div className="order-2 lg:order-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <RotateCw className="h-3 w-3" />
-            ระบบดูสินค้า 3D และ 360 องศา
-          </span>
-          <h1 className="mt-4 text-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            {t.hero.title}
-          </h1>
-          <p className="mt-4 max-w-md text-balance text-muted">{t.hero.subtitle}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/products"
-              className="focus-ring rounded-xl bg-primary px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-            >
-              {t.hero.cta1}
-            </Link>
-            <Link
-              href="/products?supports3d=true"
-              className="focus-ring rounded-xl border border-border bg-surface px-6 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/40"
-            >
-              {t.hero.cta2}
-            </Link>
-          </div>
-          <dl className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {HIGHLIGHTS.map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center gap-2 text-xs text-muted">
-                <Icon className="h-4 w-4 text-primary" />
-                <span>{label}</span>
-              </div>
-            ))}
-          </dl>
-        </div>
-
-        <div className="order-1 lg:order-2">
-          <HeroViewer />
-        </div>
+  const { t, locale } = useTranslation();
+  const en = locale === "en";
+  const features = [
+    { icon: Rotate3d, label: en ? "Every angle" : "เห็นครบทุกมุม", sub: "3D / 360°" },
+    { icon: Scan, label: en ? "In your space" : "ลองวางในพื้นที่จริง", sub: "AUGMENTED REALITY" },
+    { icon: SlidersHorizontal, label: en ? "Find your match" : "เลือกแบบที่ใช่", sub: "COMPARE & DISCOVER" },
+  ];
+  return <Localized><section className="relative isolate overflow-hidden border-b border-border">
+    <div className="hero-grid pointer-events-none absolute inset-0 -z-10" />
+    <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_75%_40%,rgb(var(--primary)/0.16),transparent_60%)]" />
+    <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:px-8 lg:py-20">
+      <div className="page-enter">
+        <span className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/5 px-3 py-1.5 text-[11px] font-medium tracking-wider text-accent"><Sparkles className="h-3.5 w-3.5" /> THE NEXT DIMENSION OF SHOPPING</span>
+        <h1 className="mt-6 max-w-xl text-balance text-4xl font-semibold leading-[1.3] tracking-tight sm:text-5xl lg:text-6xl">{t.hero.title}</h1>
+        <p className="mt-5 max-w-md text-sm leading-7 text-muted sm:text-base">{t.hero.subtitle}</p>
+        <div className="mt-7 flex flex-wrap gap-3"><Link href="/products" className="primary-action shadow-glow">{t.hero.cta1}<ArrowUpRight className="h-4 w-4" /></Link><Link href="/products?supports3d=true" className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface/70 px-5 py-3 text-sm font-medium transition hover:border-accent/40"><Rotate3d className="h-4 w-4 text-accent" />{t.hero.cta2}</Link></div>
+        <div className="mt-10 grid grid-cols-3 gap-3 border-t border-border/70 pt-6">{features.map(({ icon: Icon, label, sub }) => <div key={sub}><Icon className="mb-2 h-5 w-5 text-accent" /><p className="text-xs font-medium sm:text-sm">{label}</p><p className="mt-1 text-[8px] tracking-wider text-muted sm:text-[9px]">{sub}</p></div>)}</div>
       </div>
-    </section>
-  );
+      <HeroViewer />
+    </div>
+  </section></Localized>;
 }
