@@ -1,5 +1,7 @@
 "use client";
 
+import { PwaRegister } from "@/components/shared/pwa-register";
+import { AuthInit } from "@/components/shared/auth-init";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/shared/toaster";
 import { CartDrawer } from "@/components/cart/cart-drawer";
@@ -10,6 +12,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <LocaleProvider>
+        <AuthInit />
+        <PwaRegister />
         <AnalyticsInit />
         {children}
         <CartDrawer />

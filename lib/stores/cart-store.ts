@@ -45,7 +45,7 @@ export const useCartStore = create<CartState>()(
           }
           set({
             items: items.map((i) =>
-              i.variantId === newItem.variantId ? { ...i, quantity: nextQty } : i
+              i.variantId === newItem.variantId ? { ...i, ...newItem, id: i.id, quantity: nextQty } : i
             ),
           });
           track("add_to_cart", { productId: newItem.productId, variantId: newItem.variantId, quantity: newItem.quantity });

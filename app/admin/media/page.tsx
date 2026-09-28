@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import Image from "next/image";
 import { Box, RotateCw } from "lucide-react";
 import { MOCK_PRODUCTS } from "@/lib/mock-data/products";
@@ -7,7 +9,7 @@ export default function AdminMediaPage() {
   const threeSixtyCount = MOCK_PRODUCTS.filter((p) => p.threeSixty).length;
 
   return (
-    <div>
+    <Localized><div>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">สื่อและโมเดล 3D</h1>
       <p className="mb-6 text-sm text-muted">
         โมเดล 3D {modelsCount} ไฟล์ • ชุดภาพหมุน 360° {threeSixtyCount} ชุด
@@ -37,6 +39,6 @@ export default function AdminMediaPage() {
           </div>
         ))}
       </div>
-    </div>
+    </div></Localized>
   );
 }

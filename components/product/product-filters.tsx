@@ -1,13 +1,18 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, USE_MOCK_DATA } from "@/lib/constants";
+import type { CatalogCategory } from "@/lib/services/products";
 import { Modal } from "@/components/shared/modal";
 
 interface ProductFiltersProps {
   brands: string[];
+  categories?: CatalogCategory[];
 }
 
 const PRICE_RANGES = [
@@ -17,7 +22,7 @@ const PRICE_RANGES = [
   { label: "มากกว่า 20,000 บาท", min: 20000, max: undefined },
 ];
 
-export function ProductFilters({ brands }: ProductFiltersProps) {
+export function ProductFilters({ brands, categories = USE_MOCK_DATA ? [...CATEGORIES] : [] }: ProductFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -55,7 +60,7 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
 
       <FilterGroup title="หมวดหมู่">
         <div className="flex flex-col gap-1.5">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <FilterCheckbox
               key={cat.slug}
               label={cat.name}
@@ -129,7 +134,7 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
   );
 
   return (
-    <>
+    <Localized><>
       <button
         onClick={() => setDrawerOpen(true)}
         className="focus-ring mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm lg:hidden"
@@ -155,16 +160,16 @@ export function ProductFilters({ brands }: ProductFiltersProps) {
             แสดงผลลัพธ์
           </button>
       </Modal>
-    </>
+    </></Localized>
   );
 }
 
 function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
+    <Localized><div>
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">{title}</p>
       {children}
-    </div>
+    </div></Localized>
   );
 }
 
@@ -178,7 +183,7 @@ function FilterCheckbox({
   onChange: () => void;
 }) {
   return (
-    <label className="focus-ring flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-muted hover:text-foreground">
+    <Localized><label className="focus-ring flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm text-muted hover:text-foreground">
       <input
         type="checkbox"
         checked={checked}
@@ -186,6 +191,6 @@ function FilterCheckbox({
         className="h-4 w-4 rounded border-border accent-[rgb(var(--primary))]"
       />
       {label}
-    </label>
+    </label></Localized>
   );
 }

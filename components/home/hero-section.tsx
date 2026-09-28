@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
 import { ArrowUpRight, Rotate3d, Scan, SlidersHorizontal, Sparkles } from "lucide-react";
 import { HeroViewer } from "./hero-viewer";
@@ -13,7 +16,7 @@ export function HeroSection() {
     { icon: Scan, label: en ? "In your space" : "ลองวางในพื้นที่จริง", sub: "AUGMENTED REALITY" },
     { icon: SlidersHorizontal, label: en ? "Find your match" : "เลือกแบบที่ใช่", sub: "COMPARE & DISCOVER" },
   ];
-  return <section className="relative isolate overflow-hidden border-b border-border">
+  return <Localized><section className="relative isolate overflow-hidden border-b border-border">
     <div className="hero-grid pointer-events-none absolute inset-0 -z-10" />
     <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_75%_40%,rgb(var(--primary)/0.16),transparent_60%)]" />
     <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:px-8 lg:py-20">
@@ -26,5 +29,5 @@ export function HeroSection() {
       </div>
       <HeroViewer />
     </div>
-  </section>;
+  </section></Localized>;
 }

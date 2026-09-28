@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
 import Image from "next/image";
 import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
@@ -20,7 +23,7 @@ export function CartDrawer() {
   const progress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
 
   return (
-    <Modal open={isOpen} onClose={close} label="ตะกร้าสินค้า" className="ml-auto h-full w-full max-w-md border-l mobile-safe">
+    <Localized><Modal open={isOpen} onClose={close} label="ตะกร้าสินค้า" className="ml-auto h-full w-full max-w-md border-l mobile-safe">
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="text-base font-semibold">ตะกร้าสินค้า ({items.length})</h2>
           <button onClick={close} className="focus-ring rounded-lg p-2 text-muted hover:text-foreground" aria-label="ปิดตะกร้า">
@@ -119,6 +122,6 @@ export function CartDrawer() {
             </div>
           </>
         )}
-    </Modal>
+    </Modal></Localized>
   );
 }

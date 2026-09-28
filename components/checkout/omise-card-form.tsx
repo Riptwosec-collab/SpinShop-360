@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useEffect, useState } from "react";
 import { CreditCard, Loader2 } from "lucide-react";
 
@@ -25,7 +28,7 @@ interface OmiseCardFormProps {
 /**
  * Loads Omise.js client-side and tokenizes the card in the browser —
  * raw card numbers are sent directly from the browser to Omise's servers
- * and never touch our backend, satisfying PCI-DSS SAQ-A-EP. Our server
+ * and never touch our backend. Our server
  * only ever sees the resulting single-use token (`tokn_...`), which it
  * exchanges for a charge via `/api/payments/omise/charge-card`.
  */
@@ -54,14 +57,13 @@ export function OmiseCardForm({ onToken, disabled }: OmiseCardFormProps) {
 
   if (!publicKey) {
     return (
-      <p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
+      <Localized><p className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
         ยังไม่ได้ตั้งค่า NEXT_PUBLIC_OMISE_PUBLIC_KEY — ไม่สามารถใช้บัตรเครดิตผ่าน Omise ได้ในขณะนี้
-      </p>
+      </p></Localized>
     );
   }
 
-  function handleTokenize(e: React.FormEvent) {
-    e.preventDefault();
+  function handleTokenize() {
     if (!window.Omise) return;
 
     const [expMonth, expYear] = form.exp.split("/").map((s) => s.trim());
@@ -85,7 +87,7 @@ export function OmiseCardForm({ onToken, disabled }: OmiseCardFormProps) {
       (statusCode, response) => {
         setTokenizing(false);
         if (statusCode !== 200) {
-          setError(response.message ?? "ไม่สามารถตรวจสอบบัตรได้ กรุณาตรวจสอบข้อมูลอีกครั้ง");
+          setError("ไม่สามารถตรวจสอบบัตรได้ กรุณาตรวจสอบข้อมูลอีกครั้ง");
           return;
         }
         onToken(response.id);
@@ -94,7 +96,7 @@ export function OmiseCardForm({ onToken, disabled }: OmiseCardFormProps) {
   }
 
   return (
-    <form onSubmit={handleTokenize} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
+    <Localized><fieldset className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
       <p className="flex items-center gap-1.5 text-xs text-muted">
         <CreditCard className="h-3.5 w-3.5" />
         ข้อมูลบัตรถูกส่งตรงไปยัง Omise อย่างปลอดภัย ไม่ผ่านเซิร์ฟเวอร์ของเรา
@@ -137,13 +139,14 @@ export function OmiseCardForm({ onToken, disabled }: OmiseCardFormProps) {
         </p>
       )}
       <button
-        type="submit"
+        type="button"
+        onClick={handleTokenize}
         disabled={!scriptReady || tokenizing || disabled}
         className="focus-ring flex items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
       >
         {tokenizing && <Loader2 className="h-4 w-4 animate-spin" />}
         {!scriptReady ? "กำลังโหลด..." : tokenizing ? "กำลังตรวจสอบบัตร..." : "ยืนยันบัตร"}
       </button>
-    </form>
+    </fieldset></Localized>
   );
 }

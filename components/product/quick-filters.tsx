@@ -1,4 +1,7 @@
 "use client";
+
+import { Localized } from "@/lib/i18n/localized";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { Rotate3d, Scan, Sparkles, Tag, X } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/locale-provider";
@@ -21,8 +24,8 @@ export function QuickFilters() {
     router.push(`/products?${next}`, { scroll: false });
   }
   const count = FILTER_KEYS.filter((key) => params.has(key)).length;
-  return <div className="mb-6 flex flex-wrap items-center gap-2" aria-label={en ? "Quick filters" : "ตัวกรองด่วน"}>
+  return <Localized><div className="mb-6 flex flex-wrap items-center gap-2" aria-label={en ? "Quick filters" : "ตัวกรองด่วน"}>
     {choices.map(({ key, label, icon: Icon }) => <button key={key} onClick={() => toggle(key)} aria-pressed={params.get(key) === "true"} className={cn("focus-ring flex min-h-11 items-center gap-2 rounded-full border px-4 text-xs transition", params.get(key) === "true" ? "border-accent/40 bg-accent/10 text-accent" : "border-border bg-surface text-muted hover:border-accent/30 hover:text-foreground")}><Icon className="h-3.5 w-3.5" />{label}</button>)}
     {count > 0 && <button onClick={clear} className="flex min-h-11 items-center gap-1 px-2 text-xs text-muted hover:text-foreground"><X className="h-3.5 w-3.5" />{en ? "Clear filters" : "ล้างตัวกรองทั้งหมด"}</button>}
-  </div>;
+  </div></Localized>;
 }

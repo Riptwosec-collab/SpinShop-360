@@ -1,5 +1,7 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
 import { useState } from "react";
 import Link from "next/link";
 import { z } from "zod";
@@ -11,9 +13,11 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
   const pushToast = useToastStore((s) => s.push);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const result = schema.safeParse(email);
     if (!result.success) {
@@ -21,23 +25,24 @@ export default function ForgotPasswordPage() {
       return;
     }
     setError(null);
-    fetch("/api/auth/forgot-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    }).catch(() => undefined);
-    setSent(true);
-    pushToast("ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว (จำลอง)", "success");
+    setSubmitting(true);
+    try {
+      const response=await fetch("/api/auth/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+      const data=await response.json();
+      if(!response.ok || !data.ok){setError(data.message || "ส่งคำขอไม่สำเร็จ / Request failed");return;}
+      setMessage(data.message);setSent(true);pushToast(data.message,"success");
+    }catch{setError("ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่ / Connection failed; try again");}
+    finally{setSubmitting(false);}
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
+    <Localized><div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
       <h1 className="mb-1 text-2xl font-semibold text-foreground">ลืมรหัสผ่าน</h1>
       <p className="mb-6 text-sm text-muted">กรอกอีเมลที่ใช้สมัครสมาชิก เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้คุณ</p>
 
       {sent ? (
         <p className="rounded-lg border border-success/40 bg-success/10 p-4 text-sm text-success">
-          หากอีเมลนี้มีอยู่ในระบบ เราได้ส่งลิงก์รีเซ็ตรหัสผ่านไปแล้ว (โหมดทดสอบ: ไม่มีการส่งอีเมลจริง)
+          {message}
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
@@ -46,7 +51,7 @@ export default function ForgotPasswordPage() {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input" />
           </label>
           {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-          <button type="submit" className="focus-ring rounded-lg bg-primary py-3 text-sm font-medium text-white hover:bg-primary-hover">
+          <button type="submit" disabled={submitting} className="focus-ring rounded-lg bg-primary py-3 text-sm font-medium text-white hover:bg-primary-hover">
             ส่งลิงก์รีเซ็ตรหัสผ่าน
           </button>
         </form>
@@ -57,6 +62,6 @@ export default function ForgotPasswordPage() {
           กลับไปหน้าเข้าสู่ระบบ
         </Link>
       </p>
-    </div>
+    </div></Localized>
   );
 }

@@ -36,7 +36,7 @@ test("ผู้ใช้สามารถเลือกซื้อสิน�
   await expect(page).toHaveURL(/\/checkout/);
 
   // Step 1: buyer info
-  await page.getByLabel("อีเมล").fill("e2e-test@example.com");
+  await page.locator('input[name="buyer.email"]').fill("e2e-test@example.com");
   await page.getByLabel("เบอร์โทรศัพท์").fill("0812345678");
   await page.getByRole("button", { name: "ถัดไป" }).click();
 

@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingCart, ArrowUpRight, Check, GitCompareArrows } from "lucide-react";
@@ -35,7 +38,7 @@ export function ProductCard({ product, view = "grid" }: { product: Product; view
     pushToast(result.message, result.ok ? "success" : "error");
   }
 
-  return <article className={cn("group relative flex min-w-0 overflow-hidden rounded-2xl border border-border bg-surface transition duration-300 hover:border-accent/35 hover:shadow-glow motion-safe:hover:-translate-y-1", view === "grid" ? "flex-col" : "flex-row items-stretch")}>
+  return <Localized><article className={cn("group relative flex min-w-0 overflow-hidden rounded-2xl border border-border bg-surface transition duration-300 hover:border-accent/35 hover:shadow-glow motion-safe:hover:-translate-y-1", view === "grid" ? "flex-col" : "flex-row items-stretch")}>
     <div className={cn("relative shrink-0 overflow-hidden bg-surface-secondary", view === "grid" ? "aspect-square w-full" : "w-[34%] sm:w-48")}>
       <Link href={href} className="focus-ring relative block h-full min-h-40 w-full" aria-label={product.name}>
         <Image src={product.images[0]?.url ?? product.fallbackImageUrl} alt={product.images[0]?.altText ?? product.name} fill sizes={view === "list" ? "(max-width: 640px) 34vw, 192px" : "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"} className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-105" />
@@ -57,5 +60,5 @@ export function ProductCard({ product, view = "grid" }: { product: Product; view
         <button aria-label={t.nav.compare} aria-pressed={comparing} onClick={() => { const result = toggleCompare(product.id); pushToast(result.message, result.ok ? "success" : "error"); }} className={cn("icon-action h-11 w-10 border border-border", comparing && "border-accent/40 text-accent")} title={t.nav.compare}>{comparing ? <Check className="h-4 w-4" /> : <GitCompareArrows className="h-4 w-4" />}</button>
       </div>
     </div>
-  </article>;
+  </article></Localized>;
 }

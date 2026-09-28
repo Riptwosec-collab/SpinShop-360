@@ -1,42 +1,41 @@
 export interface CreatePaymentInput {
   orderId: string;
   orderNumber: string;
-  amount: number; // in THB (major unit, e.g. 199.00)
+  amount: number;
+  amountMinor: number;
   currency: string;
-  method: "promptpay" | "credit_card" | "debit_card" | "bank_transfer" | "cod";
+  method: 'promptpay' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'cod';
   customerEmail: string;
   returnUrl: string;
+  idempotencyKey: string;
+  token?: string;
 }
-
 export interface CreatePaymentResult {
   ok: boolean;
   message: string;
-  /** URL to redirect the customer to (hosted checkout / 3DS challenge), if any */
+  status?: 'pending' | 'failed' | 'unknown' | 'paid';
   redirectUrl?: string;
-  /** Raw QR payload for PromptPay, if applicable */
+  authorizeUri?: string;
   qrCodeData?: string;
   providerTransactionId?: string;
+  providerIntentId?: string;
 }
-
-export interface VerifyWebhookInput {
-  payload: string;
-  signature: string | null;
-}
-
+export interface VerifyWebhookInput { payload: string; signature: string | null; }
+/** Only populated from a signed Stripe event or authenticated Omise API response. */
 export interface WebhookEvent {
-  type: "payment.succeeded" | "payment.failed" | "payment.refunded";
-  providerTransactionId: string;
-  orderId?: string;
-  amount?: number;
+  eventId: string;
+  provider: 'stripe' | 'omise';
+  type: 'payment.succeeded' | 'payment.failed' | 'payment.refunded';
+  attemptId: string;
+  orderId: string;
+  providerTransactionId?: string;
+  providerIntentId?: string;
+  amountMinor: number;
+  currency: string;
+  refundedAmountMinor?: number;
 }
-
-/**
- * Common interface every payment gateway adapter implements. Route Handlers
- * call these methods without needing to know which provider is configured —
- * swap providers by changing `getActivePaymentAdapter()` in `index.ts`.
- */
 export interface PaymentAdapter {
   readonly providerName: string;
   createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult>;
-  verifyWebhookSignature(input: VerifyWebhookInput): WebhookEvent | null;
+  verifyWebhookSignature(input: VerifyWebhookInput): Promise<WebhookEvent | null> | WebhookEvent | null;
 }

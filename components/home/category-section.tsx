@@ -1,10 +1,13 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import Link from "next/link";
 import * as Icons from "lucide-react";
-import { CATEGORIES } from "@/lib/constants";
+import { getCategories } from "@/lib/services/products";
 
-export function CategorySection() {
+export async function CategorySection() {
+  const categories=await getCategories();
   return (
-    <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+    <Localized><section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground sm:text-2xl">หมวดหมู่สินค้า</h2>
@@ -12,7 +15,7 @@ export function CategorySection() {
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-9">
-        {CATEGORIES.map((cat) => {
+        {categories.map((cat) => {
           const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[cat.icon] ?? Icons.Package;
           return (
             <Link
@@ -28,6 +31,6 @@ export function CategorySection() {
           );
         })}
       </div>
-    </section>
+    </section></Localized>
   );
 }

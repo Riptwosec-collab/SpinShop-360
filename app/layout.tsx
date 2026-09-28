@@ -8,10 +8,13 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "SpinShop 360 — See every angle", template: "%s | SpinShop 360" },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "SpinShop 360", statusBarStyle: "default" },
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
   description: "หมุนดูก่อนซื้อ สำรวจสินค้าแบบ 3D และ 360 องศา",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#080d18" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#0b1220" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

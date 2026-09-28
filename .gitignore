@@ -5,3 +5,6 @@ node_modules/
 test-results/
 playwright-report/
 *.tsbuildinfo
+
+supabase/.temp/
+.work/

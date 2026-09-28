@@ -1,10 +1,12 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import { MOCK_REVIEWS } from "@/lib/mock-data/reviews";
 import { MOCK_PRODUCTS } from "@/lib/mock-data/products";
 import { RatingStars } from "@/components/product/rating-stars";
 
 export default function AdminReviewsPage() {
   return (
-    <div>
+    <Localized><div>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">จัดการรีวิว</h1>
       <p className="mb-6 text-sm text-muted">รีวิวทั้งหมด {MOCK_REVIEWS.length} รายการ</p>
       <ul className="flex flex-col gap-3">
@@ -32,6 +34,6 @@ export default function AdminReviewsPage() {
           );
         })}
       </ul>
-    </div>
+    </div></Localized>
   );
 }

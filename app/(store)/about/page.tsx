@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { InfoPageLayout, InfoSection } from "@/components/shared/info-page-layout";
 import { APP_NAME } from "@/lib/constants";
@@ -6,7 +8,7 @@ export const metadata: Metadata = { title: "เกี่ยวกับเรา
 
 export default function AboutPage() {
   return (
-    <InfoPageLayout title="เกี่ยวกับ SpinShop 360" subtitle="หมุนดูก่อนซื้อ เห็นสินค้าครบทุกมุม">
+    <Localized><InfoPageLayout title="เกี่ยวกับ SpinShop 360" subtitle="หมุนดูก่อนซื้อ เห็นสินค้าครบทุกมุม">
       <InfoSection heading="เราคือใคร">
         <p>
           {APP_NAME} คือร้านค้าออนไลน์ที่เชื่อว่าการเลือกซื้อสินค้าออนไลน์ควรมั่นใจได้เหมือนได้จับสินค้าจริงในมือ
@@ -33,6 +35,6 @@ export default function AboutPage() {
           </a>
         </p>
       </InfoSection>
-    </InfoPageLayout>
+    </InfoPageLayout></Localized>
   );
 }

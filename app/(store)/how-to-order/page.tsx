@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { InfoPageLayout, InfoSection } from "@/components/shared/info-page-layout";
 
@@ -13,7 +15,7 @@ const STEPS = [
 
 export default function HowToOrderPage() {
   return (
-    <InfoPageLayout title="วิธีสั่งซื้อสินค้า" subtitle="ขั้นตอนการสั่งซื้อบน SpinShop 360 ใช้เวลาไม่ถึง 5 นาที">
+    <Localized><InfoPageLayout title="วิธีสั่งซื้อสินค้า" subtitle="ขั้นตอนการสั่งซื้อบน SpinShop 360 ใช้เวลาไม่ถึง 5 นาที">
       <InfoSection heading="ขั้นตอนการสั่งซื้อ">
         <ol className="flex flex-col gap-4">
           {STEPS.map((step) => (
@@ -31,6 +33,6 @@ export default function HowToOrderPage() {
           บันทึกที่อยู่จัดส่ง และรับสิทธิพิเศษต่าง ๆ ได้สะดวกยิ่งขึ้น
         </p>
       </InfoSection>
-    </InfoPageLayout>
+    </InfoPageLayout></Localized>
   );
 }

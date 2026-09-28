@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useRouter } from "next/navigation";
 import { HotspotEditor, type HotspotDraft } from "@/components/admin/hotspot-editor";
 import { useToastStore } from "@/lib/stores/toast-store";
@@ -13,16 +16,16 @@ export default function ProductHotspotsPage({ params }: { params: { id: string }
   const product = useAdminProduct(params.id);
 
   if (product === undefined) {
-    return <div className="p-12 text-center text-sm text-muted">กำลังโหลด...</div>;
+    return <Localized><div className="p-12 text-center text-sm text-muted">กำลังโหลด...</div></Localized>;
   }
   if (product === null) {
-    return <div className="p-12 text-center text-sm text-muted">ไม่พบสินค้านี้</div>;
+    return <Localized><div className="p-12 text-center text-sm text-muted">ไม่พบสินค้านี้</div></Localized>;
   }
   if (!product.modelGlbUrl) {
     return (
-      <div className="rounded-2xl border border-dashed border-border p-12 text-center text-sm text-muted">
+      <Localized><div className="rounded-2xl border border-dashed border-border p-12 text-center text-sm text-muted">
         สินค้านี้ยังไม่มีโมเดล 3D — อัปโหลดโมเดลก่อนจึงจะตั้งค่า Hotspot ได้
-      </div>
+      </div></Localized>
     );
   }
 
@@ -71,7 +74,7 @@ export default function ProductHotspotsPage({ params }: { params: { id: string }
   }));
 
   return (
-    <div>
+    <Localized><div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">ตั้งค่า Hotspot</h1>
@@ -80,6 +83,6 @@ export default function ProductHotspotsPage({ params }: { params: { id: string }
       </div>
 
       <HotspotEditor modelUrl={product.modelGlbUrl} initialHotspots={initialHotspots} onSave={handleSave} />
-    </div>
+    </div></Localized>
   );
 }

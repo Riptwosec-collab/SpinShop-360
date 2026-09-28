@@ -1,112 +1,44 @@
-import type { PaymentAdapter, CreatePaymentInput, CreatePaymentResult, VerifyWebhookInput, WebhookEvent } from "./types";
+import type { PaymentAdapter, CreatePaymentInput, CreatePaymentResult, VerifyWebhookInput, WebhookEvent } from './types';
+const OMISE_API_BASE = 'https://api.omise.co';
 
-const OMISE_API_BASE = "https://api.omise.co";
-
-/**
- * Omise (opn.ooo) is a common Thailand-focused payment gateway with native
- * PromptPay QR support. Activated when `OMISE_SECRET_KEY` is set.
- * Docs: https://docs.opn.ooo/charges-api
- *
- * Omise webhooks don't use HMAC signatures the way Stripe does — instead
- * Omise recommends verifying by re-fetching the event/charge from the API
- * using your secret key rather than trusting the payload directly. This
- * adapter's `verifyWebhookSignature` does a best-effort structural check;
- * for production, re-fetch and confirm via `GET /charges/:id` as Omise docs
- * recommend before trusting the event.
- */
+/** Omise has no signed webhook: verify the event AND current charge with our key. */
 export class OmisePaymentAdapter implements PaymentAdapter {
-  readonly providerName = "omise";
-  private secretKey: string;
-
-  constructor(secretKey: string) {
-    this.secretKey = secretKey;
+  readonly providerName = 'omise';
+  constructor(private secretKey: string) {}
+  private authHeader() { return `Basic ${Buffer.from(`${this.secretKey}:`).toString('base64')}`; }
+  private async retrieve(path: string) {
+    const response = await fetch(`${OMISE_API_BASE}${path}`, { headers: { Authorization: this.authHeader(), 'Omise-Version': '2019-05-29' }, cache: 'no-store', signal: AbortSignal.timeout(15000) });
+    if (!response.ok) throw new Error('Unable to verify Omise event');
+    return response.json();
   }
-
-  private authHeader() {
-    return `Basic ${Buffer.from(`${this.secretKey}:`).toString("base64")}`;
-  }
-
   async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+    if (input.method !== 'promptpay' && !input.token) return { ok: false, status: 'failed', message: 'วิธีชำระเงินนี้ยังไม่พร้อมใช้งาน กรุณาเลือก PromptPay หรือบัตร' };
+    const body = new URLSearchParams({ amount: String(input.amountMinor), currency: input.currency.toLowerCase(), description: `Order ${input.orderNumber}`, return_uri: input.returnUrl, 'metadata[orderId]': input.orderId, 'metadata[paymentAttemptId]': input.idempotencyKey });
+    if (input.token) body.set('card', input.token);
+    else body.set('source[type]', 'promptpay');
     try {
-      const sourceType =
-        input.method === "promptpay" ? "promptpay" : input.method === "bank_transfer" ? "internet_banking" : null;
-
-      // Card payments require a client-side tokenized card (Omise.js) —
-      // this server-side path only handles source-based methods (PromptPay /
-      // internet banking). Card charges should be created client-side with
-      // the Omise.js token, then confirmed via a similar `/charges` call.
-      if (!sourceType) {
-        return {
-          ok: false,
-          message: "วิธีชำระเงินนี้ต้องสร้าง Token ฝั่ง Client ด้วย Omise.js ก่อนเรียก API นี้",
-        };
-      }
-
-      const sourceRes = await fetch(`${OMISE_API_BASE}/sources`, {
-        method: "POST",
-        headers: { Authorization: this.authHeader(), "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          type: sourceType,
-          amount: String(Math.round(input.amount * 100)),
-          currency: input.currency.toLowerCase(),
-        }),
-      });
-      const source = await sourceRes.json();
-      if (!sourceRes.ok) {
-        return { ok: false, message: source?.message ?? "ไม่สามารถสร้างแหล่งชำระเงินได้" };
-      }
-
-      const chargeRes = await fetch(`${OMISE_API_BASE}/charges`, {
-        method: "POST",
-        headers: { Authorization: this.authHeader(), "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          amount: String(Math.round(input.amount * 100)),
-          currency: input.currency.toLowerCase(),
-          source: source.id,
-          metadata: JSON.stringify({ orderId: input.orderId, orderNumber: input.orderNumber }),
-          return_uri: input.returnUrl,
-        }),
-      });
-      const charge = await chargeRes.json();
-      if (!chargeRes.ok) {
-        return { ok: false, message: charge?.message ?? "ไม่สามารถสร้างรายการชำระเงินได้" };
-      }
-
-      return {
-        ok: true,
-        message: "สร้างรายการชำระเงินสำเร็จ",
-        redirectUrl: charge.authorize_uri ?? undefined,
-        qrCodeData: charge.source?.scannable_code?.image?.download_uri ?? undefined,
-        providerTransactionId: charge.id,
-      };
-    } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเชื่อมต่อ Omise" };
-    }
+      // Exactly one POST per durable reservation. Never retry an ambiguous result.
+      const response = await fetch(`${OMISE_API_BASE}/charges`, { method: 'POST', headers: { Authorization: this.authHeader(), 'Content-Type': 'application/x-www-form-urlencoded', 'Omise-Version': '2019-05-29' }, body, signal: AbortSignal.timeout(15000) });
+      const charge = await response.json();
+      if (!response.ok) return { ok: false, status: response.status >= 500 ? 'unknown' : 'failed', message: 'ไม่สามารถยืนยันการชำระเงินได้ กรุณาตรวจสอบสถานะคำสั่งซื้อ' };
+      if (typeof charge.id !== 'string' || !/^chrg_[a-zA-Z0-9_]+$/.test(charge.id)) throw new Error('Invalid gateway response');
+      return { ok: charge.status !== 'failed', status: charge.status === 'failed' ? 'failed' : 'pending', message: charge.status === 'failed' ? 'บัตรถูกปฏิเสธ กรุณาติดต่อร้านค้า' : 'รอการยืนยันการชำระเงิน', providerTransactionId: charge.id, redirectUrl: charge.authorize_uri || undefined, authorizeUri: charge.authorize_uri || undefined, qrCodeData: charge.source?.scannable_code?.image?.download_uri || undefined };
+    } catch { return { ok: false, status: 'unknown', message: 'กำลังตรวจสอบรายการชำระเงิน กรุณาตรวจสอบสถานะคำสั่งซื้อก่อนทำรายการใหม่' }; }
   }
-
-  verifyWebhookSignature({ payload }: VerifyWebhookInput): WebhookEvent | null {
-    try {
-      const event = JSON.parse(payload);
-      const charge = event?.data;
-      if (!charge?.id) return null;
-
-      if (charge.status === "successful") {
-        return {
-          type: "payment.succeeded",
-          providerTransactionId: charge.id,
-          orderId: charge.metadata?.orderId,
-          amount: (charge.amount ?? 0) / 100,
-        };
-      }
-      if (charge.status === "failed") {
-        return { type: "payment.failed", providerTransactionId: charge.id };
-      }
-      if (charge.refunded) {
-        return { type: "payment.refunded", providerTransactionId: charge.id };
-      }
-      return null;
-    } catch {
-      return null;
-    }
+  async verifyWebhookSignature({ payload }: VerifyWebhookInput): Promise<WebhookEvent | null> {
+    let eventId: unknown;
+    try { eventId = JSON.parse(payload)?.id; } catch { return null; }
+    if (typeof eventId !== 'string' || !/^evnt_[a-zA-Z0-9_]+$/.test(eventId)) return null;
+    const event = await this.retrieve(`/events/${eventId}`);
+    if (event.id !== eventId || typeof event.key !== 'string') return null;
+    if (!event.key.startsWith('charge.') && event.key !== 'refund.create') return null;
+    const chargeId = event.key === 'refund.create' ? event.data?.charge : event.data?.id;
+    if (typeof chargeId !== 'string' || !/^chrg_[a-zA-Z0-9_]+$/.test(chargeId)) return null;
+    const charge = await this.retrieve(`/charges/${chargeId}`);
+    if (charge.id !== chargeId || !charge.metadata?.orderId || !charge.metadata?.paymentAttemptId || !Number.isSafeInteger(charge.amount) || charge.amount <= 0 || typeof charge.currency !== 'string') return null;
+    const refunded = Number(charge.refunded_amount ?? 0);
+    const type = refunded > 0 ? 'payment.refunded' : charge.status === 'successful' && charge.paid === true ? 'payment.succeeded' : ['failed', 'expired', 'reversed'].includes(charge.status) ? 'payment.failed' : null;
+    if (!type) return null;
+    return { eventId, provider: 'omise', type, orderId: charge.metadata.orderId, attemptId: charge.metadata.paymentAttemptId, providerTransactionId: charge.id, amountMinor: charge.amount, currency: charge.currency, refundedAmountMinor: refunded };
   }
 }

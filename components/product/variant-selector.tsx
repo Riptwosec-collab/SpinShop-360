@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { cn } from "@/lib/utils";
 import type { ProductOption } from "@/types/product";
 
@@ -19,7 +22,7 @@ export function VariantSelector({
   if (options.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <Localized><div className="flex flex-col gap-4">
       {options.map((option) => (
         <div key={option.id}>
           <p className="mb-2 text-sm font-medium text-foreground">
@@ -82,6 +85,6 @@ export function VariantSelector({
           </div>
         </div>
       ))}
-    </div>
+    </div></Localized>
   );
 }

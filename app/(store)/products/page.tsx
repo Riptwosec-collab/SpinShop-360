@@ -1,5 +1,7 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
-import { getProducts, getAllBrands } from "@/lib/services/products";
+import { getProducts, getAllBrands, getCategories } from "@/lib/services/products";
 import { QuickFilters } from "@/components/product/quick-filters";
 import { ProductFilters } from "@/components/product/product-filters";
 import { ProductSort } from "@/components/product/product-sort";
@@ -35,12 +37,12 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     sort: (searchParams.sort as SortType) ?? "featured",
     page,
   });
-  const brands = await getAllBrands();
+  const [brands,categories] = await Promise.all([getAllBrands(),getCategories()]);
   const view = searchParams.view === "list" ? "list" : "grid";
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="page-enter mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <Localized><div className="page-enter mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <p className="mb-3 text-[10px] font-medium tracking-[.25em] text-accent">THE COLLECTION / SPINSHOP 360</p>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">
         {searchParams.search ? `ผลการค้นหา "${searchParams.search}"` : "สินค้าทั้งหมด"}
@@ -49,7 +51,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
 
       <QuickFilters />
       <div className="flex flex-col gap-6 lg:flex-row">
-        <ProductFilters brands={brands} />
+        <ProductFilters brands={brands} categories={categories} />
 
         <div className="min-w-0 flex-1">
           <ProductSort total={total} />
@@ -78,6 +80,6 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           <Pagination page={page} totalPages={totalPages} />
         </div>
       </div>
-    </div>
+    </div></Localized>
   );
 }

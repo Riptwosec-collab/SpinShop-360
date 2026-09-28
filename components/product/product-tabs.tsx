@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useState } from "react";
 import type { Product } from "@/types/product";
 import type { Review } from "@/types/review";
@@ -19,7 +22,7 @@ export function ProductTabs({ product, reviews }: { product: Product; reviews: R
   const [active, setActive] = useState<(typeof TABS)[number]>("รายละเอียด");
 
   return (
-    <div className="mt-12">
+    <Localized><div className="mt-12">
       <div className="scrollbar-none flex gap-1 overflow-x-auto border-b border-border" role="tablist">
         {TABS.map((tab) => (
           <button
@@ -111,6 +114,6 @@ export function ProductTabs({ product, reviews }: { product: Product; reviews: R
           </div>
         )}
       </div>
-    </div>
+    </div></Localized>
   );
 }

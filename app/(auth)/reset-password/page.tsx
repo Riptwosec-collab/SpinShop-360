@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Localized } from "@/lib/i18n/localized";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToastStore } from "@/lib/stores/toast-store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -13,6 +15,16 @@ export default function ResetPasswordPage() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [sessionReady,setSessionReady]=useState(USE_MOCK_DATA);
+  useEffect(()=>{
+    if(USE_MOCK_DATA)return;
+    let alive=true;
+    const client=createSupabaseBrowserClient();
+    if(!client){setError("ระบบยืนยันตัวตนยังไม่พร้อม / Authentication is not configured");return;}
+    client.auth.getUser().then(({data,error})=>{if(!alive)return;setSessionReady(!error&&!!data.user);if(error||!data.user)setError("ลิงก์หมดอายุ กรุณาขอลิงก์รีเซ็ตใหม่ / Link expired; request a new reset link");}).catch(()=>{if(alive)setError("ไม่สามารถตรวจสอบลิงก์ได้ / Unable to verify reset link");});
+    return()=>{alive=false;};
+  },[]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,20 +54,19 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-    setSubmitting(false);
-
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
-
-    pushToast("ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบอีกครั้ง", "success");
-    router.push("/login");
+    try {
+      const {error:updateError}=await supabase.auth.updateUser({password});
+      if(updateError){setError(updateError.code === "same_password" ? "รหัสผ่านใหม่ต้องแตกต่างจากรหัสผ่านเดิม" : updateError.status === 429 ? "คำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่" : "ไม่สามารถเปลี่ยนรหัสผ่านได้ กรุณาลองใหม่");return;}
+      const {error:signOutError}=await supabase.auth.signOut();
+      if(signOutError){setError("บันทึกรหัสผ่านแล้ว แต่ยังออกจากระบบไม่สำเร็จ / Password changed; sign out and log in again");return;}
+      pushToast("ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบอีกครั้ง / Password updated; sign in again", "success");
+      router.push("/login");router.refresh();
+    }catch{setError("ไม่สามารถบันทึกได้ กรุณาลองใหม่ / Unable to save; try again");}
+    finally{setSubmitting(false);}
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
+    <Localized><div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
       <h1 className="mb-1 text-2xl font-semibold text-foreground">ตั้งรหัสผ่านใหม่</h1>
       <p className="mb-6 text-sm text-muted">กรอกรหัสผ่านใหม่ของคุณ (ลิงก์นี้ใช้ได้ครั้งเดียว)</p>
 
@@ -71,12 +82,12 @@ export default function ResetPasswordPage() {
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || !sessionReady}
           className="focus-ring rounded-lg bg-primary py-3 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
         >
           {submitting ? "กำลังบันทึก..." : "ตั้งรหัสผ่านใหม่"}
         </button>
       </form>
-    </div>
+    </div></Localized>
   );
 }

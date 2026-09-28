@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Box, RotateCw, Smartphone } from "lucide-react";
@@ -96,7 +99,7 @@ export default function NewProductPage() {
   }
 
   return (
-    <div>
+    <Localized><div>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">เพิ่มสินค้าใหม่</h1>
       <p className="mb-6 text-sm text-muted">
         {USE_MOCK_DATA
@@ -230,6 +233,6 @@ export default function NewProductPage() {
           </button>
         </div>
       </form>
-    </div>
+    </div></Localized>
   );
 }

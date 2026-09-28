@@ -1,9 +1,11 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import { CATEGORIES } from "@/lib/constants";
 import { MOCK_PRODUCTS } from "@/lib/mock-data/products";
 
 export default function AdminCategoriesPage() {
   return (
-    <div>
+    <Localized><div>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">หมวดหมู่สินค้า</h1>
       <p className="mb-6 text-sm text-muted">จัดการหมวดหมู่สินค้าทั้งหมดในร้าน</p>
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
@@ -28,6 +30,6 @@ export default function AdminCategoriesPage() {
           </tbody>
         </table>
       </div>
-    </div>
+    </div></Localized>
   );
 }

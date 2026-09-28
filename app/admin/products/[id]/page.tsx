@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -47,10 +50,10 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   }, [product]);
 
   if (product === undefined) {
-    return <div className="p-12 text-center text-sm text-muted">กำลังโหลดข้อมูลสินค้า...</div>;
+    return <Localized><div className="p-12 text-center text-sm text-muted">กำลังโหลดข้อมูลสินค้า...</div></Localized>;
   }
   if (product === null) {
-    return <div className="p-12 text-center text-sm text-muted">ไม่พบสินค้านี้</div>;
+    return <Localized><div className="p-12 text-center text-sm text-muted">ไม่พบสินค้านี้</div></Localized>;
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -113,7 +116,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <div>
+    <Localized><div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">แก้ไขสินค้า</h1>
@@ -245,6 +248,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           </button>
         </div>
       </form>
-    </div>
+    </div></Localized>
   );
 }

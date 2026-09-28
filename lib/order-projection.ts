@@ -1,0 +1,2 @@
+// Customer responses never include admin notes, payment tokens or guest capability hashes.
+export const ORDER_CUSTOMER_SELECT = 'id,order_number,user_id,email,phone,status,payment_status,subtotal,discount_amount,shipping_fee,tax_amount,grand_total,coupon_code,shipping_address,payment_method,shipping_method,customer_note,created_at,tracking_number,tracking_carrier,shipped_at,delivered_at,order_items(product_id,variant_id,product_name,sku,variant_name,image_url,unit_price,quantity,line_total)';

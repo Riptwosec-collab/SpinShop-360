@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -39,7 +42,7 @@ export function Header() {
     {t.nav[NAV_KEYS[i]]}
   </Link>);
 
-  return <>
+  return <Localized><>
     <a href="#main-content" className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-primary p-3 text-white focus:translate-y-0">{en ? "Skip to content" : "ข้ามไปเนื้อหา"}</a>
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-glass">
       <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-2 px-4 sm:gap-4 sm:px-6 lg:px-8">
@@ -72,9 +75,9 @@ export function Header() {
         <button onClick={toggleTheme} className="flex min-h-11 w-full items-center gap-3 rounded-xl bg-surface p-3 text-sm" aria-label="สลับธีมสว่าง/มืด"><Sun className="h-5 w-5" />{en ? "Switch light / dark theme" : "สลับธีมสว่าง / มืด"}</button>
       </div>
     </Modal>
-  </>;
+  </></Localized>;
 }
 
 function CountBadge({ count }: { count: number }) {
-  return <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-white">{count > 99 ? "99+" : count}</span>;
+  return <Localized><span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-white">{count > 99 ? "99+" : count}</span></Localized>;
 }

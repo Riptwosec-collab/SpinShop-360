@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -73,7 +76,7 @@ export function SearchBar({ autoFocus = false }: { autoFocus?: boolean }) {
     remember(term); setOpen(false); router.push(`/products/${product.slug}`);
   }
 
-  return <div ref={containerRef} className="relative w-full min-w-0" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
+  return <Localized><div ref={containerRef} className="relative w-full min-w-0" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
     <div className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface/80 px-3 focus-within:border-accent/60 focus-within:ring-2 focus-within:ring-accent/10">
       <Search className="h-4 w-4 shrink-0 text-muted" />
       <input ref={inputRef} autoFocus={autoFocus} value={query} role="combobox" aria-label={t.common.search} aria-autocomplete="list" aria-expanded={show} aria-controls={show ? listId : undefined} aria-activedescendant={show && active >= 0 ? `${listId}-${active}` : undefined}
@@ -98,5 +101,5 @@ export function SearchBar({ autoFocus = false }: { autoFocus?: boolean }) {
         <button onClick={() => submitSearch(term)} className="mt-2 flex min-h-11 w-full items-center justify-between rounded-xl border-t border-border px-3 text-sm text-accent">{en ? "View all results" : "ดูผลการค้นหาทั้งหมด"}<ArrowUpRight className="h-4 w-4" /></button>
       </>}
     </div>}
-  </div>;
+  </div></Localized>;
 }

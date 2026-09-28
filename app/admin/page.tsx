@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import { TrendingUp, ShoppingBag, Users, AlertTriangle, Box, Smartphone } from "lucide-react";
 import { MOCK_PRODUCTS } from "@/lib/mock-data/products";
 import { formatCurrency } from "@/lib/utils";
@@ -21,7 +23,7 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div>
+    <Localized><div>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">ภาพรวมร้านค้า</h1>
       <p className="mb-6 text-sm text-muted">สรุปข้อมูลสำคัญของ SpinShop 360 (ข้อมูลตัวอย่างในโหมด Mock)</p>
 
@@ -88,6 +90,6 @@ export default function AdminDashboardPage() {
           </ul>
         )}
       </div>
-    </div>
+    </div></Localized>
   );
 }

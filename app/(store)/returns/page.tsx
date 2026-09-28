@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { InfoPageLayout, InfoSection } from "@/components/shared/info-page-layout";
 
@@ -5,7 +7,7 @@ export const metadata: Metadata = { title: "นโยบายคืนสิน
 
 export default function ReturnsPage() {
   return (
-    <InfoPageLayout title="นโยบายเปลี่ยน/คืนสินค้า" subtitle="มั่นใจได้ในทุกการสั่งซื้อ">
+    <Localized><InfoPageLayout title="นโยบายเปลี่ยน/คืนสินค้า" subtitle="มั่นใจได้ในทุกการสั่งซื้อ">
       <InfoSection heading="เงื่อนไขการคืนสินค้า">
         <ul className="list-disc pl-5">
           <li>แจ้งขอคืนสินค้าภายใน 7 วัน นับจากวันที่ได้รับสินค้า</li>
@@ -28,6 +30,6 @@ export default function ReturnsPage() {
       <InfoSection heading="การรับประกันสินค้า">
         <p>สินค้าทุกชิ้นรับประกันความเสียหายจากการผลิตเป็นระยะเวลา 1 ปี นับจากวันที่ซื้อ ไม่ครอบคลุมความเสียหายจากการใช้งานผิดวิธีหรืออุบัติเหตุ</p>
       </InfoSection>
-    </InfoPageLayout>
+    </InfoPageLayout></Localized>
   );
 }

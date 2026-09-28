@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { QrCode, CreditCard, Landmark, Truck } from "lucide-react";
 import { InfoPageLayout, InfoSection } from "@/components/shared/info-page-layout";
@@ -13,7 +15,7 @@ const METHODS = [
 
 export default function PaymentMethodsPage() {
   return (
-    <InfoPageLayout title="วิธีชำระเงิน" subtitle="เลือกวิธีชำระเงินที่สะดวกสำหรับคุณ">
+    <Localized><InfoPageLayout title="วิธีชำระเงิน" subtitle="เลือกวิธีชำระเงินที่สะดวกสำหรับคุณ">
       <InfoSection heading="ช่องทางการชำระเงินที่รองรับ">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {METHODS.map((m) => (
@@ -32,6 +34,6 @@ export default function PaymentMethodsPage() {
           การทำรายการบัตรทั้งหมดดำเนินการผ่านผู้ให้บริการชำระเงินที่ได้มาตรฐาน PCI-DSS
         </p>
       </InfoSection>
-    </InfoPageLayout>
+    </InfoPageLayout></Localized>
   );
 }

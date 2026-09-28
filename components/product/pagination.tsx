@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -21,7 +24,7 @@ export function Pagination({ page, totalPages }: { page: number; totalPages: num
   );
 
   return (
-    <nav className="mt-8 flex items-center justify-center gap-1" aria-label="เปลี่ยนหน้า">
+    <Localized><nav className="mt-8 flex items-center justify-center gap-1" aria-label="เปลี่ยนหน้า">
       <button
         onClick={() => goTo(page - 1)}
         disabled={page <= 1}
@@ -52,6 +55,6 @@ export function Pagination({ page, totalPages }: { page: number; totalPages: num
       >
         <ChevronRight className="h-4 w-4" />
       </button>
-    </nav>
+    </nav></Localized>
   );
 }

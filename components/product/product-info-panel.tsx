@@ -1,6 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Localized } from "@/lib/i18n/localized";
+
+
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Heart, Share2, Truck, ShieldCheck, RotateCcw, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -9,7 +12,7 @@ import { PriceDisplay } from "./price-display";
 import { RatingStars } from "./rating-stars";
 import { QuantitySelector } from "./quantity-selector";
 import { VariantSelector } from "./variant-selector";
-import { findVariant } from "@/lib/services/products";
+import { useProductSelection } from "@/components/product-viewer/product-selection";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import { useToastStore } from "@/lib/stores/toast-store";
@@ -18,16 +21,7 @@ import { track } from "@/lib/analytics";
 
 export function ProductInfoPanel({ product }: { product: Product }) {
   const router = useRouter();
-  const [selected, setSelected] = useState<Record<string, string>>(() => {
-    const initial: Record<string, string> = {};
-    product.options.forEach((opt) => {
-      const firstAvailable = opt.values.find((v) =>
-        product.variants.some((variant) => variant.optionValueIds.includes(v.id) && variant.stockQuantity > 0)
-      );
-      if (firstAvailable) initial[opt.id] = firstAvailable.id;
-    });
-    return initial;
-  });
+  const { selected, setSelected, activeVariant } = useProductSelection(product);
   const [quantity, setQuantity] = useState(1);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -36,12 +30,6 @@ export function ProductInfoPanel({ product }: { product: Product }) {
   const isWishlisted = useWishlistStore((s) => s.isWishlisted(product.id));
   const toggleWishlist = useWishlistStore((s) => s.toggle);
   const pushToast = useToastStore((s) => s.push);
-
-  const selectedValueIds = Object.values(selected);
-  const activeVariant = useMemo(
-    () => findVariant(product, selectedValueIds),
-    [product, selectedValueIds]
-  );
 
   const allOptionsSelected = product.options.every((opt) => selected[opt.id]);
   const inStock = (activeVariant?.stockQuantity ?? 0) > 0;
@@ -117,7 +105,7 @@ export function ProductInfoPanel({ product }: { product: Product }) {
   const compareAtPrice = activeVariant?.compareAtPrice ?? product.compareAtPrice;
 
   return (
-    <div className="flex flex-col gap-5">
+    <Localized><div className="flex flex-col gap-5">
       <nav aria-label="breadcrumb" className="flex items-center gap-1 text-xs text-muted">
         <Link href="/" className="hover:text-foreground">หน้าแรก</Link>
         <ChevronRight className="h-3 w-3" />
@@ -230,7 +218,7 @@ export function ProductInfoPanel({ product }: { product: Product }) {
         </button>
       </div>
       <div className="h-24 sm:hidden" aria-hidden />
-    </div>
+    </div></Localized>
   );
 }
 
@@ -244,12 +232,12 @@ function InfoRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <Localized><div className="flex items-center gap-2">
       <Icon className="h-4 w-4 shrink-0 text-primary" />
       <div>
         <p className="text-xs text-muted">{label}</p>
         <p className="text-xs font-medium text-foreground">{value}</p>
       </div>
-    </div>
+    </div></Localized>
   );
 }

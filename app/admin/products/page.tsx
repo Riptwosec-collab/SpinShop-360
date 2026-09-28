@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import Link from "next/link";
 import { Plus, Box, RotateCw, Smartphone } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
@@ -16,7 +19,7 @@ export default function AdminProductsPage() {
   const { products, loading } = useAdminProducts();
 
   return (
-    <div>
+    <Localized><div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">จัดการสินค้า</h1>
@@ -86,6 +89,6 @@ export default function AdminProductsPage() {
           </table>
         </div>
       )}
-    </div>
+    </div></Localized>
   );
 }

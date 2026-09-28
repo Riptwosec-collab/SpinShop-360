@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { InfoPageLayout, InfoSection } from "@/components/shared/info-page-layout";
 import { FREE_SHIPPING_THRESHOLD, DEFAULT_SHIPPING_FEE } from "@/lib/constants";
@@ -7,7 +9,7 @@ export const metadata: Metadata = { title: "การจัดส่ง" };
 
 export default function ShippingPage() {
   return (
-    <InfoPageLayout title="นโยบายการจัดส่ง" subtitle="จัดส่งทั่วประเทศไทยผ่านขนส่งชั้นนำ">
+    <Localized><InfoPageLayout title="นโยบายการจัดส่ง" subtitle="จัดส่งทั่วประเทศไทยผ่านขนส่งชั้นนำ">
       <InfoSection heading="ระยะเวลาจัดส่ง">
         <ul className="list-disc pl-5">
           <li>จัดส่งมาตรฐาน: 2-4 วันทำการ</li>
@@ -40,6 +42,6 @@ export default function ShippingPage() {
           </a>
         </p>
       </InfoSection>
-    </InfoPageLayout>
+    </InfoPageLayout></Localized>
   );
 }

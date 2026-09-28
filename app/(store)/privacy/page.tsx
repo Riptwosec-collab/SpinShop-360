@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { InfoPageLayout, InfoSection } from "@/components/shared/info-page-layout";
 import { APP_NAME } from "@/lib/constants";
@@ -6,7 +8,7 @@ export const metadata: Metadata = { title: "นโยบายความเป
 
 export default function PrivacyPage() {
   return (
-    <InfoPageLayout title="นโยบายความเป็นส่วนตัว" subtitle="ปรับปรุงล่าสุด: มกราคม 2569">
+    <Localized><InfoPageLayout title="นโยบายความเป็นส่วนตัว" subtitle="ปรับปรุงล่าสุด: มกราคม 2569">
       <InfoSection heading="ข้อมูลที่เราเก็บรวบรวม">
         <p>เมื่อคุณใช้งาน {APP_NAME} เราอาจเก็บรวบรวมข้อมูลต่อไปนี้:</p>
         <ul className="list-disc pl-5">
@@ -49,6 +51,6 @@ export default function PrivacyPage() {
           คุณสามารถปิดการใช้งานคุกกี้ผ่านการตั้งค่าเบราว์เซอร์ได้ แต่อาจทำให้บางฟีเจอร์ใช้งานได้ไม่สมบูรณ์
         </p>
       </InfoSection>
-    </InfoPageLayout>
+    </InfoPageLayout></Localized>
   );
 }

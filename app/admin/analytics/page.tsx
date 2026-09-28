@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 const ANALYTICS = [
   { label: "เข้าชมหน้าสินค้า", value: "24,830" },
   { label: "เปิดดูโมเดล 3D", value: "1,842" },
@@ -9,7 +11,7 @@ const ANALYTICS = [
 
 export default function AdminAnalyticsPage() {
   return (
-    <div>
+    <Localized><div>
       <h1 className="mb-1 text-2xl font-semibold text-foreground">วิเคราะห์ข้อมูล</h1>
       <p className="mb-6 text-sm text-muted">
         ข้อมูลตัวอย่างสำหรับสาธิต Dashboard — เชื่อมต่อ PostHog หรือ Google Analytics ผ่าน{" "}
@@ -23,6 +25,6 @@ export default function AdminAnalyticsPage() {
           </div>
         ))}
       </div>
-    </div>
+    </div></Localized>
   );
 }

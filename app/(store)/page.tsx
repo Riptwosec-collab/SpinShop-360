@@ -1,3 +1,5 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import { HeroSection } from "@/components/home/hero-section";
 import { CategorySection } from "@/components/home/category-section";
 import { ProductRail } from "@/components/home/product-rail";
@@ -17,7 +19,7 @@ export default async function HomePage() {
   ]);
 
   return (
-    <>
+    <Localized><>
       <HeroSection />
       <CategorySection />
       <ProductRail
@@ -40,6 +42,6 @@ export default async function HomePage() {
         viewAllHref="/products?supportsAr=true"
       />
       <TestimonialsSection />
-    </>
+    </></Localized>
   );
 }

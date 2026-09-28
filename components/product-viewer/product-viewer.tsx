@@ -1,114 +1,98 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Image as ImageIcon, RotateCw, Box, Smartphone, Palette } from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import { Image as ImageIcon, RotateCw, Box, Smartphone, Ruler } from "lucide-react";
 import type { Product, ViewerMode } from "@/types/product";
 import { ImageGallery } from "./image-gallery";
 import { Product360Viewer } from "./product-360-viewer";
 import { Product3DViewer } from "./product-3d-viewer";
-import { Product3DMaterialViewer } from "./product-3d-material-viewer";
+import { useProductSelection } from "./product-selection";
+import { useStudioMessages } from "./studio-messages";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 
 const SESSION_KEY = "spinshop360-viewer-mode";
 
-type ExtendedViewerMode = ViewerMode | "material";
-
-const MODE_META: Record<ExtendedViewerMode, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
-  image: { label: "รูปภาพ", icon: ImageIcon },
-  "360": { label: "ดู 360°", icon: RotateCw },
-  "3d": { label: "ดูแบบ 3D", icon: Box },
-  ar: { label: "ดูในพื้นที่จริง", icon: Smartphone },
-  material: { label: "เปลี่ยนสีแบบเรียลไทม์", icon: Palette },
-};
-
 export function ProductViewer({ product }: { product: Product }) {
-  const availableModes: ExtendedViewerMode[] = [
-    "image",
-    ...(product.supports360 && product.threeSixty ? (["360"] as const) : []),
-    ...(product.supports3d && product.modelGlbUrl ? (["3d"] as const) : []),
-    ...(product.supportsAr && product.modelGlbUrl ? (["ar"] as const) : []),
-    ...(product.materialOptions && product.materialOptions.length > 0 && product.modelGlbUrl
-      ? (["material"] as const)
-      : []),
+  const t = useStudioMessages();
+  const id = useId();
+  const { selected, setSelected, activeVariant } = useProductSelection(product);
+  const modelUrl = activeVariant?.modelUrl || product.modelGlbUrl;
+  const imageUrl = activeVariant?.imageUrl || product.fallbackImageUrl;
+  const colorOption = product.options.find((option) => option.displayType === "color");
+  const selectedColor = colorOption?.values.find((value) => value.id === selected[colorOption.id]);
+  const matchedMaterial = product.materialOptions?.find((material) =>
+    material.color.toLowerCase() === selectedColor?.colorHex?.toLowerCase() || material.name === selectedColor?.value);
+  const [finishId, setFinishId] = useState<string | null>(null);
+  const activeMaterial = matchedMaterial ?? (!colorOption ? product.materialOptions?.find((material) => material.id === finishId) : undefined);
+  const availableModes: ViewerMode[] = ["image",
+    ...(product.supports360 && product.threeSixty?.frames.length ? ["360" as const] : []),
+    ...((product.supports3d || activeVariant?.modelUrl) && modelUrl ? ["3d" as const] : []),
+    ...(product.supportsAr && modelUrl ? ["ar" as const] : []),
   ];
-
-  const [mode, setMode] = useState<ExtendedViewerMode>("image");
+  const [mode, setMode] = useState<ViewerMode>("image");
+  const currentMode = availableModes.includes(mode) ? mode : "image";
+  const [showDimensions, setShowDimensions] = useState(false);
+  const [unit, setUnit] = useState<"cm" | "in">("cm");
+  const dimensions = product.dimensions;
+  const hasDimensions = dimensions && [dimensions.widthCm, dimensions.heightCm, dimensions.depthCm].every((value) => Number.isFinite(value) && value > 0);
+  const formatLength = (value: number) => Number((unit === "cm" ? value : value / 2.54).toFixed(2));
+  const isSample = !!modelUrl?.includes("modelviewer.dev/shared-assets/models/");
+  const images = activeVariant?.imageUrl
+    ? [{ id: activeVariant.id, productId: product.id, url: activeVariant.imageUrl, altText: product.name, sortOrder: 0, isPrimary: true }, ...product.images.filter((image) => image.url !== activeVariant.imageUrl)]
+    : product.images.length ? product.images : [{ id: "fallback", productId: product.id, url: product.fallbackImageUrl, altText: product.name, sortOrder: 0, isPrimary: true }];
 
   useEffect(() => {
-    const stored = window.sessionStorage.getItem(SESSION_KEY) as ExtendedViewerMode | null;
-    if (stored && availableModes.includes(stored)) {
-      setMode(stored);
-    } else {
-      setMode(availableModes[0]);
-    }
+    try {
+      const stored = window.sessionStorage.getItem(SESSION_KEY) as ViewerMode | null;
+      setMode(stored && availableModes.includes(stored) ? stored : "image");
+    } catch { /* Session preferences are optional. */ }
     track("product_view", { productId: product.id, productName: product.name });
+    // Preferences are restored once per product, never during variant selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
 
-  function selectMode(m: ExtendedViewerMode) {
-    setMode(m);
-    window.sessionStorage.setItem(SESSION_KEY, m);
-    const eventMap: Partial<Record<ExtendedViewerMode, "product_3d_open" | "product_360_open" | "product_ar_open">> = {
-      "3d": "product_3d_open",
-      "360": "product_360_open",
-      ar: "product_ar_open",
-    };
-    const event = eventMap[m];
-    if (event) track(event, { productId: product.id, productName: product.name });
+  function selectMode(next: ViewerMode) {
+    setMode(next);
+    try { window.sessionStorage.setItem(SESSION_KEY, next); } catch { /* Optional storage. */ }
+    const events = { "3d": "product_3d_open", "360": "product_360_open", ar: "product_ar_open" } as const;
+    if (next !== "image") track(events[next], { productId: product.id, productName: product.name });
   }
+  const modeMeta = { image: { label: t.image, icon: ImageIcon }, "360": { label: t.spin, icon: RotateCw }, "3d": { label: t.model, icon: Box }, ar: { label: t.ar, icon: Smartphone } };
 
   return (
-    <div>
-      {availableModes.length > 1 && (
-        <div className="mb-3 flex flex-wrap gap-1.5" role="tablist" aria-label="เลือกรูปแบบการแสดงสินค้า">
-          {availableModes.map((m) => {
-            const { label, icon: Icon } = MODE_META[m];
-            return (
-              <button
-                key={m}
-                role="tab"
-                aria-selected={mode === m}
-                onClick={() => selectMode(m)}
-                className={cn(
-                  "focus-ring flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
-                  mode === m
-                    ? "border-primary/50 bg-primary/15 text-primary"
-                    : "border-border bg-surface text-muted hover:border-primary/30 hover:text-foreground"
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {mode === "image" && <ImageGallery images={product.images} alt={product.name} />}
-
-      {mode === "360" && product.threeSixty && (
-        <Product360Viewer frames={product.threeSixty.frames} alt={product.name} />
-      )}
-
-      {(mode === "3d" || mode === "ar") && product.modelGlbUrl && (
-        <Product3DViewer
-          modelUrl={product.modelGlbUrl}
-          usdzUrl={product.modelUsdzUrl}
-          alt={product.name}
-          fallbackImageUrl={product.fallbackImageUrl}
-          hotspots={product.hotspots}
-          supportsAr={product.supportsAr}
-        />
-      )}
-
-      {mode === "material" && product.modelGlbUrl && product.materialOptions && (
-        <Product3DMaterialViewer
-          modelUrl={product.modelGlbUrl}
-          materialOptions={product.materialOptions}
-          alt={product.name}
-        />
-      )}
-    </div>
+    <section className="min-w-0" aria-label={t.title}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{t.title}</p><p className="mt-1 text-sm text-muted">{t.subtitle}</p></div>
+        <button type="button" aria-expanded={showDimensions} aria-controls={`${id}-dimensions`} onClick={() => setShowDimensions((value) => !value)} className={cn("focus-ring flex min-h-11 items-center gap-2 rounded-xl border px-3 text-xs", showDimensions ? "border-primary/50 bg-primary/10 text-primary" : "border-border text-muted")}><Ruler className="h-4 w-4" />{t.dimensions}</button>
+      </div>
+      <div className="mb-3 flex flex-wrap gap-1.5" role="tablist" aria-label={t.modes}>
+        {availableModes.map((item, index) => {
+          const { label, icon: Icon } = modeMeta[item];
+          return <button key={item} id={`${id}-${item}`} type="button" role="tab" aria-controls={`${id}-panel`} aria-selected={currentMode === item} tabIndex={currentMode === item ? 0 : -1} onClick={() => selectMode(item)} onKeyDown={(event) => {
+            if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? availableModes.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + availableModes.length) % availableModes.length;
+            selectMode(availableModes[nextIndex]);
+            document.getElementById(`${id}-${availableModes[nextIndex]}`)?.focus();
+          }} className={cn("focus-ring flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors", currentMode === item ? "border-primary/50 bg-primary/15 text-primary" : "border-border bg-surface text-muted hover:text-foreground")}><Icon className="h-4 w-4" />{label}</button>;
+        })}
+      </div>
+      <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${currentMode}`}>
+        {currentMode === "image" && <ImageGallery key={activeVariant?.id ?? product.id} images={images} alt={product.name} />}
+        {currentMode === "360" && product.threeSixty && <Product360Viewer frames={product.threeSixty.frames} alt={product.name} />}
+        {(currentMode === "3d" || currentMode === "ar") && modelUrl && <Product3DViewer key={modelUrl} modelUrl={modelUrl} usdzUrl={activeVariant?.modelUrl ? undefined : product.modelUsdzUrl} alt={product.name} fallbackImageUrl={imageUrl} hotspots={product.hotspots.filter((hotspot) => !hotspot.variantId || hotspot.variantId === activeVariant?.id)} supportsAr={product.supportsAr} activeMaterial={activeMaterial} />}
+      </div>
+      {(currentMode === "3d" || currentMode === "ar") && isSample && <p className="mt-3 rounded-xl border border-warning/30 bg-warning/5 p-3 text-xs leading-relaxed text-muted">{t.sample}</p>}
+      {showDimensions && <div id={`${id}-dimensions`} className="mt-3 rounded-xl border border-primary/25 bg-primary/5 p-4" role="region" aria-label={t.dimensions}>
+        {hasDimensions ? <><div className="flex items-center justify-between gap-3"><span className="text-xs text-muted">{t.dimensionOrder}</span><div className="flex gap-1">{(["cm", "in"] as const).map((value) => <button type="button" key={value} aria-pressed={unit === value} onClick={() => setUnit(value)} className={cn("focus-ring min-h-9 rounded-lg px-3 text-xs", unit === value ? "bg-primary text-white" : "text-muted")}>{value}</button>)}</div></div><p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{[dimensions.widthCm, dimensions.heightCm, dimensions.depthCm].map(formatLength).join(" × ")} {unit}</p><p className="mt-2 text-xs text-muted">{t.dimensionNote}</p></> : <p className="text-sm text-muted">{t.unknownDimensions}</p>}
+      </div>}
+      {colorOption && <div className="mt-4 rounded-xl border border-border bg-surface p-4"><p className="mb-3 text-xs text-muted">{t.selected}{selectedColor ? ` · ${selectedColor.value}` : ""}</p><div className="flex flex-wrap gap-2">{colorOption.values.map((value) => {
+        const ids = Object.values({ ...selected, [colorOption.id]: value.id });
+        const available = product.variants.some((variant) => variant.isActive && variant.stockQuantity > 0 && ids.every((id) => variant.optionValueIds.includes(id)));
+        return <button key={value.id} type="button" aria-label={`${t.color}: ${value.value}`} aria-pressed={selected[colorOption.id] === value.id} disabled={!available} onClick={() => setSelected((prev) => ({ ...prev, [colorOption.id]: value.id }))} className={cn("focus-ring flex min-h-11 items-center gap-2 rounded-xl border px-3 text-xs disabled:opacity-40", selected[colorOption.id] === value.id ? "border-primary/60 bg-primary/10 text-foreground" : "border-border text-muted")}><span className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: value.colorHex ?? "#888" }} />{value.value}</button>;
+      })}</div><p className="mt-3 text-xs leading-relaxed text-muted">{currentMode === "image" ? t.imageNote : t.materialNote}</p></div>}
+      {!colorOption && product.materialOptions?.length && (currentMode === "3d" || currentMode === "ar") ? <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t.material}>{product.materialOptions.map((material) => <button key={material.id} type="button" aria-pressed={finishId === material.id} onClick={() => setFinishId(material.id)} className="focus-ring flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-xs text-foreground"><span className="h-5 w-5 rounded-full" style={{ backgroundColor: material.color }} />{material.name}</button>)}<p className="w-full text-xs text-muted">{t.materialNote}</p></div> : null}
+    </section>
   );
 }

@@ -1,5 +1,8 @@
 "use client";
 
+import { Localized } from "@/lib/i18n/localized";
+
+
 import { useEffect, useRef, useState } from "react";
 import { Trash2, Plus, Eye, EyeOff, GripVertical } from "lucide-react";
 import type { ProductHotspot } from "@/types/product";
@@ -102,7 +105,7 @@ export function HotspotEditor({
   const selected = hotspots.find((h) => h.id === selectedId);
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+    <Localized><div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
       <div>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted">
@@ -273,13 +276,13 @@ export function HotspotEditor({
           </div>
         )}
       </div>
-    </div>
+    </div></Localized>
   );
 }
 
 function PositionField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (
-    <label className="flex flex-col gap-1">
+    <Localized><label className="flex flex-col gap-1">
       <span className="text-[10px] text-muted">{label}</span>
       <input
         type="number"
@@ -288,6 +291,6 @@ function PositionField({ label, value, onChange }: { label: string; value: numbe
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
         className="input px-2 py-1.5 text-xs"
       />
-    </label>
+    </label></Localized>
   );
 }

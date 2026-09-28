@@ -1,6 +1,9 @@
+
+import { Localized } from "@/lib/i18n/localized";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProductBySlug, getProductReviews, getRelatedProducts } from "@/lib/services/products";
+import { ProductSelectionProvider } from "@/components/product-viewer/product-selection";
 import { ProductViewer } from "@/components/product-viewer/product-viewer";
 import { ProductInfoPanel } from "@/components/product/product-info-panel";
 import { ProductTabs } from "@/components/product/product-tabs";
@@ -80,19 +83,21 @@ export default async function ProductDetailPage({ params }: PageProps) {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <Localized><div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
+      <ProductSelectionProvider key={product.id} product={product}>
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-14">
         <ProductViewer product={product} />
         <ProductInfoPanel product={product} />
       </div>
+      </ProductSelectionProvider>
 
       <ProductTabs product={product} reviews={reviews} />
       <RelatedProducts products={related} />
-    </div>
+    </div></Localized>
   );
 }

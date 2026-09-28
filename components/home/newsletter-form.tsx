@@ -1,64 +1,23 @@
 "use client";
-
-import { useState } from "react";
-import { Mail } from "lucide-react";
-import { z } from "zod";
-import { useToastStore } from "@/lib/stores/toast-store";
-import { useTranslation } from "@/lib/i18n/locale-provider";
-
-const emailSchema = z.string().email("กรุณากรอกอีเมลให้ถูกต้อง");
-
+import { useState } from 'react';
+import { useTranslation } from '@/lib/i18n/locale-provider';
+import { submissionMessage } from '@/lib/submission-messages';
 export function NewsletterForm() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const pushToast = useToastStore((s) => s.push);
-  const { t } = useTranslation();
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const result = emailSchema.safeParse(email);
-    if (!result.success) {
-      setError(result.error.issues[0].message);
-      return;
-    }
-    setError(null);
-    pushToast("สมัครรับข่าวสารสำเร็จ ขอบคุณค่ะ", "success");
-    setEmail("");
+  const {t,locale} = useTranslation(); const en = locale==='en';
+  const [email,setEmail]=useState(''); const [consent,setConsent]=useState(false);
+  const [busy,setBusy]=useState(false); const [result,setResult]=useState<string|null>(null);
+  async function submit(event:React.FormEvent){
+    event.preventDefault(); if(busy)return; setBusy(true);setResult(null);
+    try {const response=await fetch('/api/newsletter',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,consent})});const data=await response.json();
+      setResult(response.ok&&data.ok?'saved':data.code||'save_failed');if(response.ok&&data.ok){setEmail('');setConsent(false);}
+    }catch{setResult('save_failed');}finally{setBusy(false);}
   }
-
-  return (
-    <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-      <div>
-        <h4 className="text-sm font-medium text-foreground">{t.footer.newsletterTitle}</h4>
-        <p className="text-xs text-muted">{t.footer.newsletterDesc}</p>
-      </div>
-      <form onSubmit={handleSubmit} className="flex w-full max-w-sm gap-2 sm:w-auto" noValidate>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
-            <Mail className="h-4 w-4 text-muted" />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="อีเมลของคุณ"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-muted"
-              aria-invalid={!!error}
-              aria-describedby={error ? "newsletter-error" : undefined}
-            />
-          </div>
-          {error && (
-            <p id="newsletter-error" className="mt-1 text-xs text-danger" role="alert">
-              {error}
-            </p>
-          )}
-        </div>
-        <button
-          type="submit"
-          className="focus-ring shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-        >
-          {t.footer.subscribe}
-        </button>
-      </form>
-    </div>
-  );
+  return <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+    <div><h4 className="text-sm font-medium">{t.footer.newsletterTitle}</h4><p className="text-xs text-muted">{t.footer.newsletterDesc}</p></div>
+    <form onSubmit={submit} className="w-full max-w-sm space-y-2">
+      <div className="flex gap-2"><label className="min-w-0 flex-1"><span className="sr-only">{en?'Email address':'อีเมล'}</span><input className="input w-full" type="email" required maxLength={254} autoComplete="email" placeholder={en?'Your email':'อีเมลของคุณ'} value={email} onChange={e=>setEmail(e.target.value)}/></label><button disabled={busy} type="submit" className="primary-button shrink-0">{busy?(en?'Saving…':'กำลังบันทึก…'):t.footer.subscribe}</button></div>
+      <label className="flex items-start gap-2 text-xs text-muted"><input type="checkbox" className="mt-0.5" required checked={consent} onChange={e=>setConsent(e.target.checked)}/>{en?'I agree to receive store news by email.':'ฉันยินยอมรับข่าวสารจากร้านทางอีเมล'}</label>
+      {result&&<p role={result==='saved'?'status':'alert'} className={`text-xs ${result==='saved'?'text-success':'text-danger'}`}>{result==='saved'?(en?'Your subscription request has been saved.':'บันทึกคำขอรับข่าวสารเรียบร้อยแล้ว'):submissionMessage(result,locale)}</p>}
+    </form>
+  </div>;
 }
