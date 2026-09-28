@@ -1,14 +1,11 @@
 import type { Product } from "@/types/product";
 
-/**
- * Placeholder 3D assets: Google's public model-viewer sample models
- * (https://modelviewer.dev/shared-assets/models/) — swap `modelGlbUrl`
- * for real product scans in production. See README section "อัปโหลดโมเดล 3D".
- */
+// Original self-hosted illustrative product models, not scans of retail products.
 const SAMPLE_GLB = {
-  astronaut: "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
-  robot: "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
-  helmet: "https://modelviewer.dev/shared-assets/models/NeilArmstrong.glb",
+  keyboard: "/models/demo/keyboard.glb",
+  phone: "/models/demo/phone.glb",
+  chair: "/models/demo/chair.glb",
+  robot: "/models/demo/robot.glb",
 };
 
 const now = new Date().toISOString();
@@ -110,8 +107,8 @@ export const MOCK_PRODUCTS: Product[] = [
     isNew: true,
     supports3d: true,
     supports360: false,
-    supportsAr: true,
-    modelGlbUrl: SAMPLE_GLB.robot,
+    supportsAr: false,
+    modelGlbUrl: SAMPLE_GLB.keyboard,
     modelUsdzUrl: null,
     fallbackImageUrl:
       "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=1200&q=80",
@@ -139,8 +136,8 @@ export const MOCK_PRODUCTS: Product[] = [
       },
     ],
     variants: [
-      { id: "v3", productId: "p2", sku: "AUR-KB-075-RED", price: 3290, compareAtPrice: null, stockQuantity: 15, imageUrl: null, modelUrl: SAMPLE_GLB.robot, isActive: true, optionValueIds: ["ov3"] },
-      { id: "v4", productId: "p2", sku: "AUR-KB-075-BRN", price: 3390, compareAtPrice: null, stockQuantity: 10, imageUrl: null, modelUrl: SAMPLE_GLB.robot, isActive: true, optionValueIds: ["ov4"] },
+      { id: "v3", productId: "p2", sku: "AUR-KB-075-RED", price: 3290, compareAtPrice: null, stockQuantity: 15, imageUrl: null, modelUrl: SAMPLE_GLB.keyboard, isActive: true, optionValueIds: ["ov3"] },
+      { id: "v4", productId: "p2", sku: "AUR-KB-075-BRN", price: 3390, compareAtPrice: null, stockQuantity: 10, imageUrl: null, modelUrl: SAMPLE_GLB.keyboard, isActive: true, optionValueIds: ["ov4"] },
     ],
     hotspots: [
       { id: "h1", productId: "p2", title: "โครงอะลูมิเนียม CNC", description: "ตัวเรือนกัด CNC จากอะลูมิเนียมเกรดการบิน ให้น้ำหนักแน่นและเสียงพิมพ์แน่นหนึบ", position: { x: 0.1, y: 0.4, z: 0.2 }, normal: { x: 0, y: 1, z: 0 }, icon: "Layers", sortOrder: 0, isActive: true },
@@ -149,10 +146,10 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
     threeSixty: null,
     materialOptions: [
-      { id: "mat-black", name: "ดำเงา", color: "#15171c", roughness: 0.35, metalness: 0.6 },
-      { id: "mat-white", name: "ขาวมุก", color: "#f1f3f6", roughness: 0.4, metalness: 0.2 },
-      { id: "mat-navy", name: "น้ำเงินเข้ม", color: "#1d3a63", roughness: 0.3, metalness: 0.5 },
-      { id: "mat-red", name: "แดงเลือดหมู", color: "#7f1d1d", roughness: 0.35, metalness: 0.4 },
+      { id: "mat-black", name: "ดำเงา", color: "#15171c", targetMaterialName: "shell", roughness: 0.35, metalness: 0.6 },
+      { id: "mat-white", name: "ขาวมุก", color: "#f1f3f6", targetMaterialName: "shell", roughness: 0.4, metalness: 0.2 },
+      { id: "mat-navy", name: "น้ำเงินเข้ม", color: "#1d3a63", targetMaterialName: "shell", roughness: 0.3, metalness: 0.5 },
+      { id: "mat-red", name: "แดงเลือดหมู", color: "#7f1d1d", targetMaterialName: "shell", roughness: 0.35, metalness: 0.4 },
     ],
     specs: [
       { label: "เค้าโครง", value: "75% (84 ปุ่ม)" },
@@ -241,8 +238,8 @@ export const MOCK_PRODUCTS: Product[] = [
     isNew: true,
     supports3d: true,
     supports360: false,
-    supportsAr: true,
-    modelGlbUrl: SAMPLE_GLB.helmet,
+    supportsAr: false,
+    modelGlbUrl: SAMPLE_GLB.phone,
     modelUsdzUrl: null,
     fallbackImageUrl:
       "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=1200&q=80",
@@ -260,9 +257,9 @@ export const MOCK_PRODUCTS: Product[] = [
       ]},
     ],
     variants: [
-      { id: "v7", productId: "p4", sku: "HLO-X13-256-TI", price: 21990, compareAtPrice: 24990, stockQuantity: 10, imageUrl: null, modelUrl: SAMPLE_GLB.helmet, isActive: true, optionValueIds: ["ov7", "ov9"] },
-      { id: "v8", productId: "p4", sku: "HLO-X13-512-TI", price: 25990, compareAtPrice: 27990, stockQuantity: 5, imageUrl: null, modelUrl: SAMPLE_GLB.helmet, isActive: true, optionValueIds: ["ov8", "ov9"] },
-      { id: "v9", productId: "p4", sku: "HLO-X13-256-GR", price: 21990, compareAtPrice: 24990, stockQuantity: 3, imageUrl: null, modelUrl: SAMPLE_GLB.helmet, isActive: true, optionValueIds: ["ov7", "ov10"] },
+      { id: "v7", productId: "p4", sku: "HLO-X13-256-TI", price: 21990, compareAtPrice: 24990, stockQuantity: 10, imageUrl: null, modelUrl: SAMPLE_GLB.phone, isActive: true, optionValueIds: ["ov7", "ov9"] },
+      { id: "v8", productId: "p4", sku: "HLO-X13-512-TI", price: 25990, compareAtPrice: 27990, stockQuantity: 5, imageUrl: null, modelUrl: SAMPLE_GLB.phone, isActive: true, optionValueIds: ["ov8", "ov9"] },
+      { id: "v9", productId: "p4", sku: "HLO-X13-256-GR", price: 21990, compareAtPrice: 24990, stockQuantity: 3, imageUrl: null, modelUrl: SAMPLE_GLB.phone, isActive: true, optionValueIds: ["ov7", "ov10"] },
     ],
     hotspots: [
       { id: "h4", productId: "p4", title: "กล้องหลัก 3 ตัว", description: "เลนส์หลัก 50MP, อัลตร้าไวด์ 12MP, เทเลโฟโต้ 10MP ซูมออปติคัล 3 เท่า", position: { x: -0.2, y: 0.3, z: 0.3 }, normal: { x: 0, y: 0, z: 1 }, icon: "Camera", sortOrder: 0, isActive: true },
@@ -302,8 +299,8 @@ export const MOCK_PRODUCTS: Product[] = [
     isNew: false,
     supports3d: true,
     supports360: false,
-    supportsAr: true,
-    modelGlbUrl: SAMPLE_GLB.robot,
+    supportsAr: false,
+    modelGlbUrl: SAMPLE_GLB.chair,
     modelUsdzUrl: null,
     fallbackImageUrl:
       "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=1200&q=80",
@@ -317,8 +314,8 @@ export const MOCK_PRODUCTS: Product[] = [
       ]},
     ],
     variants: [
-      { id: "v10", productId: "p5", sku: "THR-CHR-ELT-RD", price: 6990, compareAtPrice: 8990, stockQuantity: 8, imageUrl: null, modelUrl: SAMPLE_GLB.robot, isActive: true, optionValueIds: ["ov11"] },
-      { id: "v11", productId: "p5", sku: "THR-CHR-ELT-BL", price: 6990, compareAtPrice: 8990, stockQuantity: 7, imageUrl: null, modelUrl: SAMPLE_GLB.robot, isActive: true, optionValueIds: ["ov12"] },
+      { id: "v10", productId: "p5", sku: "THR-CHR-ELT-RD", price: 6990, compareAtPrice: 8990, stockQuantity: 8, imageUrl: null, modelUrl: SAMPLE_GLB.chair, isActive: true, optionValueIds: ["ov11"] },
+      { id: "v11", productId: "p5", sku: "THR-CHR-ELT-BL", price: 6990, compareAtPrice: 8990, stockQuantity: 7, imageUrl: null, modelUrl: SAMPLE_GLB.chair, isActive: true, optionValueIds: ["ov12"] },
     ],
     hotspots: [
       { id: "h6", productId: "p5", title: "ปรับเอนได้ 165 องศา", description: "ล็อกมุมเอนได้หลายระดับ เหมาะกับการพักสายตาระหว่างเล่นเกม", position: { x: 0, y: -0.2, z: -0.3 }, normal: { x: 0, y: 0, z: -1 }, icon: "RockingChair", sortOrder: 0, isActive: true },
@@ -614,8 +611,8 @@ export const MOCK_PRODUCTS: Product[] = [
     isNew: true,
     supports3d: true,
     supports360: false,
-    supportsAr: true,
-    modelGlbUrl: SAMPLE_GLB.astronaut,
+    supportsAr: false,
+    modelGlbUrl: SAMPLE_GLB.robot,
     modelUsdzUrl: null,
     fallbackImageUrl:
       "https://images.unsplash.com/photo-1608889175123-8ee362201f81?w=1200&q=80",
@@ -624,7 +621,7 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
     options: [],
     variants: [
-      { id: "v23", productId: "p11", sku: "CLB-FIG-MECHA-01", price: 4590, compareAtPrice: null, stockQuantity: 12, imageUrl: null, modelUrl: SAMPLE_GLB.astronaut, isActive: true, optionValueIds: [] },
+      { id: "v23", productId: "p11", sku: "CLB-FIG-MECHA-01", price: 4590, compareAtPrice: null, stockQuantity: 12, imageUrl: null, modelUrl: SAMPLE_GLB.robot, isActive: true, optionValueIds: [] },
     ],
     hotspots: [
       { id: "h7", productId: "p11", title: "ข้อต่อขยับได้ 20 จุด", description: "จัดท่าทางได้อย่างอิสระโดยไม่ทำสีลอก", position: { x: 0.1, y: 0.3, z: 0.2 }, normal: { x: 0, y: 1, z: 0 }, icon: "Move3d", sortOrder: 0, isActive: true },

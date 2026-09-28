@@ -140,9 +140,9 @@ export async function getBestsellerProducts(limit = 8): Promise<Product[]> {
     .slice(0, limit);
 }
 
-export async function getArProducts(limit = 6): Promise<Product[]> {
+export async function get3dProducts(limit = 6): Promise<Product[]> {
   return (await catalog())
-    .filter((p) => p.supportsAr && p.status === "active")
+    .filter((p) => p.supports3d && p.status === "active")
     .slice(0, limit);
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { RotateCw, Maximize, Minimize, RefreshCw, Smartphone } from "lucide-react";
+import { RotateCw, Maximize, Minimize, RefreshCw } from "lucide-react";
 import type { MaterialOption, ProductHotspot } from "@/types/product";
 import type { ModelViewerElement } from "@/types/model-viewer";
 import { useStudioMessages } from "./studio-messages";
@@ -10,17 +10,15 @@ import { cn } from "@/lib/utils";
 
 interface Product3DViewerProps {
   modelUrl: string;
-  usdzUrl?: string | null;
   alt: string;
   fallbackImageUrl: string;
   hotspots?: ProductHotspot[];
-  supportsAr?: boolean;
   activeMaterial?: MaterialOption | null;
 }
 
-type Viewer = ModelViewerElement & { activateAR: () => Promise<void> };
+type Viewer = ModelViewerElement;
 
-export function Product3DViewer({ modelUrl, usdzUrl, alt, fallbackImageUrl, hotspots = [], supportsAr = false, activeMaterial }: Product3DViewerProps) {
+export function Product3DViewer({ modelUrl, alt, fallbackImageUrl, hotspots = [], activeMaterial }: Product3DViewerProps) {
   const t = useStudioMessages();
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -33,15 +31,12 @@ export function Product3DViewer({ modelUrl, usdzUrl, alt, fallbackImageUrl, hots
   const [background, setBackground] = useState("neutral");
   const [exposure, setExposure] = useState(1);
   const [attempt, setAttempt] = useState(0);
-  const [canAr, setCanAr] = useState(false);
-  const [arError, setArError] = useState(false);
 
   useEffect(() => {
     let active = true;
     setLoadError(false);
     setModelLoaded(false);
     setProgress(0);
-    setCanAr(false);
     import("@google/model-viewer").then(() => { if (active) setScriptReady(true); }).catch(() => { if (active) setLoadError(true); });
     return () => { active = false; };
   }, [modelUrl, attempt]);
@@ -49,19 +44,15 @@ export function Product3DViewer({ modelUrl, usdzUrl, alt, fallbackImageUrl, hots
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer || !scriptReady || loadError) return;
-    const loaded = () => { setModelLoaded(true); setProgress(100); setCanAr(supportsAr && viewer.canActivateAR); };
+    const loaded = () => { setModelLoaded(true); setProgress(100); };
     const failed = () => setLoadError(true);
     const progressChanged = (event: Event) => setProgress(Math.round(((event as CustomEvent<{ totalProgress: number }>).detail?.totalProgress ?? 0) * 100));
-    const arChanged = (event: Event) => {
-      setCanAr(supportsAr && viewer.canActivateAR);
-      if ((event as CustomEvent<{ status?: string }>).detail?.status === "failed") setArError(true);
-    };
     viewer.addEventListener("load", loaded);
     viewer.addEventListener("error", failed);
     viewer.addEventListener("progress", progressChanged);
-    viewer.addEventListener("ar-status", arChanged);
-    return () => { viewer.removeEventListener("load", loaded); viewer.removeEventListener("error", failed); viewer.removeEventListener("progress", progressChanged); viewer.removeEventListener("ar-status", arChanged); };
-  }, [scriptReady, modelUrl, attempt, supportsAr, loadError]);
+    if (viewer.loaded) loaded();
+    return () => { viewer.removeEventListener("load", loaded); viewer.removeEventListener("error", failed); viewer.removeEventListener("progress", progressChanged); };
+  }, [scriptReady, modelUrl, attempt, loadError]);
 
   useEffect(() => {
     if (modelLoaded || loadError) return;
@@ -101,7 +92,7 @@ export function Product3DViewer({ modelUrl, usdzUrl, alt, fallbackImageUrl, hots
   return <div ref={containerRef} className="rounded-2xl bg-background">
     <div className={cn("relative aspect-square w-full overflow-hidden rounded-2xl border border-border", background === "dark" ? "bg-[#101827]" : background === "light" ? "bg-[#e6edf2]" : "bg-surface-secondary")}>
       {!modelLoaded && <div role="status" className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-surface-secondary"><div className="h-9 w-9 animate-spin rounded-full border-2 border-border border-t-primary motion-reduce:animate-none" /><p className="text-sm text-muted">{t.loading}</p><p className="text-xs text-muted">{progress}%</p></div>}
-      {scriptReady && <model-viewer key={`${modelUrl}-${attempt}`} ref={viewerRef as unknown as React.RefObject<HTMLElement>} src={modelUrl} alt={alt} poster={fallbackImageUrl} {...(supportsAr ? { ar: true, "ios-src": usdzUrl ?? undefined } : {})} ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" auto-rotate={autoRotate || undefined} shadow-intensity="1" environment-image="neutral" exposure={exposure} loading="eager" reveal="auto" style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}><span slot="ar-button" /></model-viewer>}
+      {scriptReady && <model-viewer key={`${modelUrl}-${attempt}`} ref={viewerRef as unknown as React.RefObject<HTMLElement>} src={modelUrl} alt={alt} poster={fallbackImageUrl} camera-controls touch-action="pan-y" auto-rotate={autoRotate || undefined} shadow-intensity="1" environment-image="neutral" exposure={exposure} loading="eager" reveal="auto" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", backgroundColor: "transparent" }} />}
       {modelLoaded && <p className="pointer-events-none absolute left-3 right-3 top-3 w-fit rounded-full border border-border bg-background/80 px-3 py-1.5 text-[11px] text-muted backdrop-blur-glass">{t.drag}</p>}
     </div>
     <div className="mt-3 flex flex-wrap gap-2">
@@ -111,7 +102,6 @@ export function Product3DViewer({ modelUrl, usdzUrl, alt, fallbackImageUrl, hots
       <label className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-xs text-muted">{t.background}<select aria-label={t.background} value={background} onChange={(event) => setBackground(event.target.value)} className="focus-ring rounded bg-surface px-1 py-2 text-foreground"><option value="neutral">{t.neutral}</option><option value="dark">{t.dark}</option><option value="light">{t.light}</option></select></label>
       <label className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-xs text-muted">{t.lighting}<input aria-label={t.lighting} type="range" min="0.5" max="1.5" step="0.1" value={exposure} onChange={(event) => setExposure(Number(event.target.value))} className="focus-ring w-20 accent-primary" /></label>
     </div>
-    {supportsAr && <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3"><button type="button" disabled={!modelLoaded || !canAr} onClick={async () => { setArError(false); try { await viewerRef.current?.activateAR(); } catch { setArError(true); } }} className="focus-ring flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"><Smartphone className="h-4 w-4" />{t.arLaunch}</button><p className="mt-2 text-xs leading-relaxed text-muted">{modelLoaded && !canAr ? t.arUnavailable : t.arNote}</p>{arError && <p role="alert" className="mt-2 text-xs text-danger">{t.arFailed}</p>}</div>}
     {hotspots.some((hotspot) => hotspot.isActive) && <details className="mt-3 rounded-xl border border-border p-3 text-sm"><summary className="focus-ring cursor-pointer text-foreground">{t.features}</summary><div className="mt-3 space-y-3">{hotspots.filter((hotspot) => hotspot.isActive).map((hotspot) => <div key={hotspot.id}><h3 className="text-xs font-semibold text-foreground">{hotspot.title}</h3><p className="mt-1 text-xs leading-relaxed text-muted">{hotspot.description}</p></div>)}</div></details>}
   </div>;
 }

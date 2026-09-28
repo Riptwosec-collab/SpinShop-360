@@ -1,4 +1,4 @@
-import { Box, RotateCw, Smartphone } from "lucide-react";
+import { Box, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CONFIG = {
@@ -7,11 +7,6 @@ const CONFIG = {
     label: "360°",
     icon: RotateCw,
     className: "bg-primary/15 text-primary border-primary/30",
-  },
-  ar: {
-    label: "AR",
-    icon: Smartphone,
-    className: "bg-success/15 text-success border-success/30",
   },
 } as const;
 

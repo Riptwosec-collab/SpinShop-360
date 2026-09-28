@@ -8,14 +8,14 @@ import { TestimonialsSection } from "@/components/home/testimonials-section";
 import {
   getFeaturedProducts,
   getBestsellerProducts,
-  getArProducts,
+  get3dProducts,
 } from "@/lib/services/products";
 
 export default async function HomePage() {
-  const [featured, bestsellers, arProducts] = await Promise.all([
+  const [featured, bestsellers, modelProducts] = await Promise.all([
     getFeaturedProducts(8),
     getBestsellerProducts(8),
-    getArProducts(6),
+    get3dProducts(6),
   ]);
 
   return (
@@ -36,10 +36,10 @@ export default async function HomePage() {
         viewAllHref="/products?onSale=false&sort=bestselling"
       />
       <ProductRail
-        title="ทดลองวางสินค้าจริงด้วย AR"
-        subtitle="ดูสินค้าเสมือนอยู่ในพื้นที่ของคุณผ่านสมาร์ทโฟน"
-        products={arProducts}
-        viewAllHref="/products?supportsAr=true"
+        title="สำรวจสินค้าในสตูดิโอ 3D"
+        subtitle="หมุนและซูมโมเดลเพื่อสำรวจสินค้าได้รอบด้าน"
+        products={modelProducts}
+        viewAllHref="/products?supports3d=true"
       />
       <TestimonialsSection />
     </></Localized>

@@ -6,7 +6,7 @@ import { Localized } from "@/lib/i18n/localized";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Box, RotateCw, Smartphone, Trash2, Copy } from "lucide-react";
+import { Box, RotateCw, Trash2, Copy } from "lucide-react";
 import { useToastStore } from "@/lib/stores/toast-store";
 import { Section, FieldRow, UploadBox, ToggleCard } from "@/components/admin/form-blocks";
 import { useAdminProduct } from "@/lib/hooks/use-admin-products";
@@ -30,7 +30,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [stockQuantity, setStockQuantity] = useState("");
   const [supports3d, setSupports3d] = useState(false);
   const [supports360, setSupports360] = useState(false);
-  const [supportsAr, setSupportsAr] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -46,7 +45,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     setStockQuantity(String(product.stockQuantity));
     setSupports3d(product.supports3d);
     setSupports360(product.supports360);
-    setSupportsAr(product.supportsAr);
   }, [product]);
 
   if (product === undefined) {
@@ -86,7 +84,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           stockQuantity: Number(stockQuantity) || 0,
           supports3d,
           supports360,
-          supportsAr,
+          supportsAr: false,
         }),
       });
       const result = await res.json();
@@ -204,7 +202,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           <div className="flex flex-wrap gap-3">
             <ToggleCard label="รองรับโมเดล 3D" icon={Box} checked={supports3d} onChange={setSupports3d} />
             <ToggleCard label="รองรับภาพหมุน 360°" icon={RotateCw} checked={supports360} onChange={setSupports360} />
-            <ToggleCard label="รองรับ AR" icon={Smartphone} checked={supportsAr} onChange={setSupportsAr} />
           </div>
         </Section>
 

@@ -1,6 +1,6 @@
 
 import { Localized } from "@/lib/i18n/localized";
-import { TrendingUp, ShoppingBag, Users, AlertTriangle, Box, Smartphone } from "lucide-react";
+import { TrendingUp, ShoppingBag, Users, AlertTriangle, Box } from "lucide-react";
 import { MOCK_PRODUCTS } from "@/lib/mock-data/products";
 import { formatCurrency } from "@/lib/utils";
 import { RealtimeAdminFeed } from "@/components/admin/realtime-stock-feed";
@@ -19,7 +19,6 @@ export default function AdminDashboardPage() {
 
   const engagement = [
     { label: "เปิดดูโมเดล 3D", value: "1,842 ครั้ง", icon: Box },
-    { label: "เปิดใช้งาน AR", value: "356 ครั้ง", icon: Smartphone },
   ];
 
   return (

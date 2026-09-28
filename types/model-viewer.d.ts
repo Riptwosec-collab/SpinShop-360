@@ -19,9 +19,6 @@ type ModelViewerJSX = DetailedHTMLProps<
     src?: string;
     alt?: string;
     poster?: string;
-    ar?: boolean;
-    "ar-modes"?: string;
-    "ar-scale"?: string;
     "camera-controls"?: boolean;
     "touch-action"?: string;
     "auto-rotate"?: boolean;
@@ -56,7 +53,7 @@ export interface ModelViewerElement extends HTMLElement {
   autoRotate: boolean;
   availableVariants: string[];
   variantName: string | null;
-  canActivateAR: boolean;
+  loaded: boolean;
   toDataURL: (type?: string, encoderOptions?: number) => string;
   jumpCameraToGoal: () => void;
   resetTurntableRotation: () => void;

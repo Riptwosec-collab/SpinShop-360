@@ -29,7 +29,6 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     maxPrice: searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined,
     supports3d: searchParams.supports3d === "true",
     supports360: searchParams.supports360 === "true",
-    supportsAr: searchParams.supportsAr === "true",
     onSale: searchParams.onSale === "true",
     isNew: searchParams.isNew === "true",
     isBestseller: searchParams.isBestseller === "true",

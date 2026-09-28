@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { Image as ImageIcon, RotateCw, Box, Smartphone, Ruler } from "lucide-react";
+import { Image as ImageIcon, RotateCw, Box, Ruler } from "lucide-react";
 import type { Product, ViewerMode } from "@/types/product";
 import { ImageGallery } from "./image-gallery";
 import { Product360Viewer } from "./product-360-viewer";
@@ -9,6 +9,7 @@ import { Product3DViewer } from "./product-3d-viewer";
 import { useProductSelection } from "./product-selection";
 import { useStudioMessages } from "./studio-messages";
 import { cn } from "@/lib/utils";
+import { resolveProductModelUrl } from "@/lib/product-model";
 import { track } from "@/lib/analytics";
 
 const SESSION_KEY = "spinshop360-viewer-mode";
@@ -17,7 +18,7 @@ export function ProductViewer({ product }: { product: Product }) {
   const t = useStudioMessages();
   const id = useId();
   const { selected, setSelected, activeVariant } = useProductSelection(product);
-  const modelUrl = activeVariant?.modelUrl || product.modelGlbUrl;
+  const modelUrl = resolveProductModelUrl(activeVariant?.modelUrl || product.modelGlbUrl, product.slug);
   const imageUrl = activeVariant?.imageUrl || product.fallbackImageUrl;
   const colorOption = product.options.find((option) => option.displayType === "color");
   const selectedColor = colorOption?.values.find((value) => value.id === selected[colorOption.id]);
@@ -28,7 +29,6 @@ export function ProductViewer({ product }: { product: Product }) {
   const availableModes: ViewerMode[] = ["image",
     ...(product.supports360 && product.threeSixty?.frames.length ? ["360" as const] : []),
     ...((product.supports3d || activeVariant?.modelUrl) && modelUrl ? ["3d" as const] : []),
-    ...(product.supportsAr && modelUrl ? ["ar" as const] : []),
   ];
   const [mode, setMode] = useState<ViewerMode>("image");
   const currentMode = availableModes.includes(mode) ? mode : "image";
@@ -37,7 +37,7 @@ export function ProductViewer({ product }: { product: Product }) {
   const dimensions = product.dimensions;
   const hasDimensions = dimensions && [dimensions.widthCm, dimensions.heightCm, dimensions.depthCm].every((value) => Number.isFinite(value) && value > 0);
   const formatLength = (value: number) => Number((unit === "cm" ? value : value / 2.54).toFixed(2));
-  const isSample = !!modelUrl?.includes("modelviewer.dev/shared-assets/models/");
+  const isSample = !!(modelUrl?.startsWith("/models/demo/") || modelUrl?.includes("modelviewer.dev/shared-assets/models/"));
   const images = activeVariant?.imageUrl
     ? [{ id: activeVariant.id, productId: product.id, url: activeVariant.imageUrl, altText: product.name, sortOrder: 0, isPrimary: true }, ...product.images.filter((image) => image.url !== activeVariant.imageUrl)]
     : product.images.length ? product.images : [{ id: "fallback", productId: product.id, url: product.fallbackImageUrl, altText: product.name, sortOrder: 0, isPrimary: true }];
@@ -55,10 +55,10 @@ export function ProductViewer({ product }: { product: Product }) {
   function selectMode(next: ViewerMode) {
     setMode(next);
     try { window.sessionStorage.setItem(SESSION_KEY, next); } catch { /* Optional storage. */ }
-    const events = { "3d": "product_3d_open", "360": "product_360_open", ar: "product_ar_open" } as const;
+    const events = { "3d": "product_3d_open", "360": "product_360_open" } as const;
     if (next !== "image") track(events[next], { productId: product.id, productName: product.name });
   }
-  const modeMeta = { image: { label: t.image, icon: ImageIcon }, "360": { label: t.spin, icon: RotateCw }, "3d": { label: t.model, icon: Box }, ar: { label: t.ar, icon: Smartphone } };
+  const modeMeta = { image: { label: t.image, icon: ImageIcon }, "360": { label: t.spin, icon: RotateCw }, "3d": { label: t.model, icon: Box } };
 
   return (
     <section className="min-w-0" aria-label={t.title}>
@@ -81,9 +81,9 @@ export function ProductViewer({ product }: { product: Product }) {
       <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${currentMode}`}>
         {currentMode === "image" && <ImageGallery key={activeVariant?.id ?? product.id} images={images} alt={product.name} />}
         {currentMode === "360" && product.threeSixty && <Product360Viewer frames={product.threeSixty.frames} alt={product.name} />}
-        {(currentMode === "3d" || currentMode === "ar") && modelUrl && <Product3DViewer key={modelUrl} modelUrl={modelUrl} usdzUrl={activeVariant?.modelUrl ? undefined : product.modelUsdzUrl} alt={product.name} fallbackImageUrl={imageUrl} hotspots={product.hotspots.filter((hotspot) => !hotspot.variantId || hotspot.variantId === activeVariant?.id)} supportsAr={product.supportsAr} activeMaterial={activeMaterial} />}
+        {(currentMode === "3d") && modelUrl && <Product3DViewer key={modelUrl} modelUrl={modelUrl} alt={product.name} fallbackImageUrl={imageUrl} hotspots={product.hotspots.filter((hotspot) => !hotspot.variantId || hotspot.variantId === activeVariant?.id)} activeMaterial={activeMaterial} />}
       </div>
-      {(currentMode === "3d" || currentMode === "ar") && isSample && <p className="mt-3 rounded-xl border border-warning/30 bg-warning/5 p-3 text-xs leading-relaxed text-muted">{t.sample}</p>}
+      {(currentMode === "3d") && isSample && <p className="mt-3 rounded-xl border border-warning/30 bg-warning/5 p-3 text-xs leading-relaxed text-muted">{t.sample}</p>}
       {showDimensions && <div id={`${id}-dimensions`} className="mt-3 rounded-xl border border-primary/25 bg-primary/5 p-4" role="region" aria-label={t.dimensions}>
         {hasDimensions ? <><div className="flex items-center justify-between gap-3"><span className="text-xs text-muted">{t.dimensionOrder}</span><div className="flex gap-1">{(["cm", "in"] as const).map((value) => <button type="button" key={value} aria-pressed={unit === value} onClick={() => setUnit(value)} className={cn("focus-ring min-h-9 rounded-lg px-3 text-xs", unit === value ? "bg-primary text-white" : "text-muted")}>{value}</button>)}</div></div><p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{[dimensions.widthCm, dimensions.heightCm, dimensions.depthCm].map(formatLength).join(" × ")} {unit}</p><p className="mt-2 text-xs text-muted">{t.dimensionNote}</p></> : <p className="text-sm text-muted">{t.unknownDimensions}</p>}
       </div>}
@@ -92,7 +92,7 @@ export function ProductViewer({ product }: { product: Product }) {
         const available = product.variants.some((variant) => variant.isActive && variant.stockQuantity > 0 && ids.every((id) => variant.optionValueIds.includes(id)));
         return <button key={value.id} type="button" aria-label={`${t.color}: ${value.value}`} aria-pressed={selected[colorOption.id] === value.id} disabled={!available} onClick={() => setSelected((prev) => ({ ...prev, [colorOption.id]: value.id }))} className={cn("focus-ring flex min-h-11 items-center gap-2 rounded-xl border px-3 text-xs disabled:opacity-40", selected[colorOption.id] === value.id ? "border-primary/60 bg-primary/10 text-foreground" : "border-border text-muted")}><span className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: value.colorHex ?? "#888" }} />{value.value}</button>;
       })}</div><p className="mt-3 text-xs leading-relaxed text-muted">{currentMode === "image" ? t.imageNote : t.materialNote}</p></div>}
-      {!colorOption && product.materialOptions?.length && (currentMode === "3d" || currentMode === "ar") ? <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t.material}>{product.materialOptions.map((material) => <button key={material.id} type="button" aria-pressed={finishId === material.id} onClick={() => setFinishId(material.id)} className="focus-ring flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-xs text-foreground"><span className="h-5 w-5 rounded-full" style={{ backgroundColor: material.color }} />{material.name}</button>)}<p className="w-full text-xs text-muted">{t.materialNote}</p></div> : null}
+      {!colorOption && product.materialOptions?.length && (currentMode === "3d") ? <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t.material}>{product.materialOptions.map((material) => <button key={material.id} type="button" aria-pressed={finishId === material.id} onClick={() => setFinishId(material.id)} className="focus-ring flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-xs text-foreground"><span className="h-5 w-5 rounded-full" style={{ backgroundColor: material.color }} />{material.name}</button>)}<p className="w-full text-xs text-muted">{t.materialNote}</p></div> : null}
     </section>
   );
 }

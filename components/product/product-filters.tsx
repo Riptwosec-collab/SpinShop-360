@@ -119,7 +119,6 @@ export function ProductFilters({ brands, categories = USE_MOCK_DATA ? [...CATEGO
         <div className="flex flex-col gap-1.5">
           <FilterCheckbox label="รองรับ 3D" checked={searchParams.get("supports3d") === "true"} onChange={() => toggleBoolParam("supports3d")} />
           <FilterCheckbox label="รองรับ 360 องศา" checked={searchParams.get("supports360") === "true"} onChange={() => toggleBoolParam("supports360")} />
-          <FilterCheckbox label="รองรับ AR" checked={searchParams.get("supportsAr") === "true"} onChange={() => toggleBoolParam("supportsAr")} />
         </div>
       </FilterGroup>
 

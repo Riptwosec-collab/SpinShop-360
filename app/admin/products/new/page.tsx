@@ -5,7 +5,7 @@ import { Localized } from "@/lib/i18n/localized";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, RotateCw, Smartphone } from "lucide-react";
+import { Box, RotateCw } from "lucide-react";
 import { useToastStore } from "@/lib/stores/toast-store";
 import { Section, FieldRow, UploadBox, ToggleCard } from "@/components/admin/form-blocks";
 import { useAdminCategoriesAndBrands } from "@/lib/hooks/use-admin-options";
@@ -32,7 +32,6 @@ export default function NewProductPage() {
   const [seoDescription, setSeoDescription] = useState("");
   const [supports3d, setSupports3d] = useState(false);
   const [supports360, setSupports360] = useState(false);
-  const [supportsAr, setSupportsAr] = useState(false);
   const [saving, setSaving] = useState(false);
 
   function handleNameChange(value: string) {
@@ -77,7 +76,7 @@ export default function NewProductPage() {
           stockQuantity: Number(stockQuantity) || 0,
           supports3d,
           supports360,
-          supportsAr,
+          supportsAr: false,
           seoTitle,
           seoDescription,
         }),
@@ -190,7 +189,6 @@ export default function NewProductPage() {
         <Section title="สื่อสินค้า">
           <UploadBox label="รูปภาพสินค้า" hint="JPG, PNG, WebP — แนะนำอัตราส่วน 1:1" />
           <UploadBox label="โมเดล 3D (.glb / .gltf)" hint="ขนาดแนะนำไม่เกิน 15-25MB รองรับ Draco Compression" />
-          <UploadBox label="โมเดล AR สำหรับ iOS (.usdz)" hint="ไม่บังคับ ใช้สำหรับ Quick Look บน iOS" />
           <UploadBox label="ภาพหมุน 360 องศา (หลายไฟล์)" hint="แนะนำ 24-72 ภาพ ตั้งชื่อไฟล์ frame-001, frame-002 ตามลำดับ" />
           <p className="text-xs text-muted">
             หมายเหตุ: การอัปโหลดไฟล์จริงเข้า Supabase Storage ยังเป็นขั้นตอนแยก — อัปโหลดผ่าน Storage Dashboard หรือ Storage API
@@ -202,7 +200,6 @@ export default function NewProductPage() {
           <div className="flex flex-wrap gap-3">
             <ToggleCard label="รองรับโมเดล 3D" icon={Box} checked={supports3d} onChange={setSupports3d} />
             <ToggleCard label="รองรับภาพหมุน 360°" icon={RotateCw} checked={supports360} onChange={setSupports360} />
-            <ToggleCard label="รองรับ AR" icon={Smartphone} checked={supportsAr} onChange={setSupportsAr} />
           </div>
         </Section>
 

@@ -8,8 +8,7 @@ import type { Product } from "@/types/product";
 // The browser's GPU renderer is external; keep our controls, DOM and event wiring real.
 vi.mock("@google/model-viewer", () => ({}));
 class TestModelViewer extends HTMLElement {
-  canActivateAR = false;
-  activateAR = vi.fn().mockResolvedValue(undefined);
+  loaded = false;
   cameraOrbit = "";
   jumpCameraToGoal = vi.fn();
 }
@@ -52,18 +51,15 @@ it("renders the product photograph when a 3D load fails", async () => {
   expect(screen.getByText("3D could not load. Showing the product image.")).toBeInTheDocument();
 });
 
-it("only enables AR when the loaded viewer confirms device support and preserves the iOS asset", async () => {
+it("removes AR even when legacy catalog data enables it", async () => {
+  sessionStorage.setItem("spinshop360-viewer-mode", "ar");
   show({ ...base, supports3d: true, supportsAr: true, modelGlbUrl: "/real.glb", modelUsdzUrl: "/real.usdz" });
-  fireEvent.click(screen.getByRole("tab", { name: "AR preview" }));
-  const viewer = await waitFor(() => { const node = document.querySelector("model-viewer") as unknown as TestModelViewer; expect(node).not.toBeNull(); return node; });
-  expect(viewer).toHaveAttribute("ios-src", "/real.usdz");
-  act(() => viewer.dispatchEvent(new Event("load")));
-  expect(screen.getByRole("button", { name: "View in your space" })).toBeDisabled();
-  viewer.canActivateAR = true;
-  act(() => viewer.dispatchEvent(new Event("ar-status")));
-  expect(screen.getByRole("button", { name: "View in your space" })).toBeEnabled();
-  fireEvent.click(screen.getByRole("button", { name: "View in your space" }));
-  expect(viewer.activateAR).toHaveBeenCalledOnce();
+  expect(screen.queryByRole("tab", { name: "AR preview" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("tab", { name: "3D Studio" }));
+  const viewer = await waitFor(() => { const node = document.querySelector("model-viewer"); expect(node).not.toBeNull(); return node!; });
+  expect(viewer).not.toHaveAttribute("ar");
+  expect(viewer).not.toHaveAttribute("ios-src");
+  expect(screen.queryByRole("button", { name: "View in your space" })).not.toBeInTheDocument();
 });
 
 it("retains a loaded model past the loading deadline and falls back on a later rendering error", async () => {

@@ -1,6 +1,6 @@
 # SpinShop 360
 
-ร้านค้าตัวอย่าง Next.js 14 + React 18 + TypeScript พร้อม 3D/360/AR, ภาษาไทย–อังกฤษ และโหมดข้อมูลจริงผ่าน Supabase
+ร้านค้าตัวอย่าง Next.js 14 + React 18 + TypeScript พร้อม 3D/360, ภาษาไทย–อังกฤษ และโหมดข้อมูลจริงผ่าน Supabase
 
 ## เริ่มต้น
 
@@ -68,9 +68,11 @@ Migration ใหม่เพิ่ม field สำหรับ catalog, inbox/ne
 - Timeline ใช้สถานะออเดอร์และ `tracking_number`, `tracking_carrier`, `shipped_at`, `delivered_at` ที่ทีมร้านบันทึก ไม่มีการดึงข้อมูลบริษัทขนส่งอัตโนมัติ
 - อีเมลยืนยันออเดอร์เปิดได้ด้วย Resend (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`) ถ้าไม่ตั้งค่าจะใช้ console adapter ในโหมดพัฒนา
 
-## 3D, AR และ PWA
+## 3D และ PWA
 
-ใส่ GLB/USDZ และภาพสินค้าจริงก่อนเปิดขาย โมเดลตัวอย่างบางชิ้นเป็น astronaut/robot จาก modelviewer.dev และถูกติดป้าย sample preview ไม่ควรใช้วัดขนาดสินค้าจริง AR แสดงตามอุปกรณ์และไฟล์ที่รองรับ; dimensions ที่แสดงมาจากข้อมูลสินค้า ไม่ใช่การวัดโมเดล
+โมเดลสาธิตคีย์บอร์ด โทรศัพท์ เก้าอี้ และหุ่นยนต์อยู่ใน `public/models/demo/` และโหลดจากเว็บเดียวกัน ไม่มี texture/decoder ภายนอก สร้างซ้ำด้วย `node scripts/generate-demo-models.mjs` โมเดลเหล่านี้เป็นรูปทรงประกอบการสาธิต ไม่ใช่ scan ของสินค้าจริง ใส่ GLB และภาพสินค้าจริงก่อนเปิดขาย dimensions มาจากข้อมูลสินค้า ไม่ใช่การวัดโมเดล
+
+เอา AR ออกจากตัว viewer, ตัวกรอง, badge และหลังบ้านแล้ว คอลัมน์ AR เดิมยังคงไว้เพื่อไม่ทำลายข้อมูลเก่า แต่ไม่มีการเปิดใช้งาน AR ในแอป
 
 Service worker เปิดเฉพาะ production บน secure context (HTTPS หรือ localhost) cache เฉพาะ `/offline.html` และไอคอน ไม่เก็บข้อมูลสินค้าหรือข้อมูลลูกค้าแบบออฟไลน์ บน iPhone ใช้ Safari → Share → Add to Home Screen
 

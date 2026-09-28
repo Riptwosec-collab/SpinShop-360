@@ -23,7 +23,6 @@ const ROWS: { label: string; get: (p: Product) => string }[] = [
   { label: "น้ำหนัก", get: (p) => (p.dimensions ? `${p.dimensions.weightKg} กก.` : "-") },
   { label: "รองรับ 3D", get: (p) => (p.supports3d ? "รองรับ" : "ไม่รองรับ") },
   { label: "รองรับ 360°", get: (p) => (p.supports360 ? "รองรับ" : "ไม่รองรับ") },
-  { label: "รองรับ AR", get: (p) => (p.supportsAr ? "รองรับ" : "ไม่รองรับ") },
   { label: "สถานะสินค้า", get: (p) => (p.stockQuantity > 0 ? "พร้อมส่ง" : "สินค้าหมด") },
 ];
 

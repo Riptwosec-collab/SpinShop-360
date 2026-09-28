@@ -3,7 +3,7 @@
 import { Localized } from "@/lib/i18n/localized";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Rotate3d, Scan, Sparkles, Tag, X } from "lucide-react";
+import { Rotate3d, Sparkles, Tag, X } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 const FILTER_KEYS = ["category", "brand", "minPrice", "maxPrice", "supports3d", "supports360", "supportsAr", "onSale", "isNew", "isBestseller", "featured"];
@@ -12,7 +12,7 @@ export function QuickFilters() {
   const router = useRouter();
   const { locale } = useTranslation();
   const en = locale === "en";
-  const choices = [{ key: "supports3d", label: "3D", icon: Rotate3d }, { key: "supports360", label: "360°", icon: Rotate3d }, { key: "supportsAr", label: "AR", icon: Scan }, { key: "isNew", label: en ? "New arrivals" : "มาใหม่", icon: Sparkles }, { key: "onSale", label: en ? "On sale" : "ลดราคา", icon: Tag }];
+  const choices = [{ key: "supports3d", label: "3D", icon: Rotate3d }, { key: "supports360", label: "360°", icon: Rotate3d }, { key: "isNew", label: en ? "New arrivals" : "มาใหม่", icon: Sparkles }, { key: "onSale", label: en ? "On sale" : "ลดราคา", icon: Tag }];
   function toggle(key: string) {
     const next = new URLSearchParams(params.toString());
     if (next.get(key) === "true") next.delete(key); else next.set(key, "true");

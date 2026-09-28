@@ -44,7 +44,7 @@ export function ProductCard({ product, view = "grid" }: { product: Product; view
         <Image src={product.images[0]?.url ?? product.fallbackImageUrl} alt={product.images[0]?.altText ?? product.name} fill sizes={view === "list" ? "(max-width: 640px) 34vw, 192px" : "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"} className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-105" />
       </Link>
       <div className="pointer-events-none absolute left-2 top-2 flex max-w-[65%] flex-wrap gap-1">
-        {product.supports3d && <ProductBadge type="3d" />}{product.supports360 && <ProductBadge type="360" />}{product.supportsAr && <ProductBadge type="ar" />}
+        {product.supports3d && <ProductBadge type="3d" />}{product.supports360 && <ProductBadge type="360" />}
       </div>
       <button onClick={() => { const added = toggleWishlist(product.id); pushToast(added ? t.product.addedToWishlist : t.product.removedFromWishlist, "success"); }}
         className="focus-ring absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background/90 backdrop-blur-glass transition hover:text-danger"
